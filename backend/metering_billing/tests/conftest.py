@@ -7,7 +7,6 @@ from metering_billing.utils.enums import (
     PLAN_DURATION,
     PLAN_STATUS,
     PLAN_VERSION_STATUS,
-    PRODUCT_STATUS,
     USAGE_BILLING_FREQUENCY,
 )
 from model_bakery import baker
@@ -192,7 +191,7 @@ def add_subscription_record_to_org():
         month_anchor=None,
         end_date=None,
     ):
-        duration = billing_plan.plan.plan_duration
+        duration = billing_plan.plan_duration
         start_date = start_date if start_date else now_utc()
         day_anchor = day_anchor if day_anchor else start_date.day
         month_anchor = (
@@ -239,25 +238,10 @@ def get_subscription_records_in_org():
 
 
 @pytest.fixture
-def add_product_to_org():
-    from metering_billing.models import Product
-
-    def do_add_product_to_org(organization):
-        product = baker.make(
-            Product,
-            organization=organization,
-            name="test-product",
-            description="test-product-description",
-            status=PRODUCT_STATUS.ACTIVE,
-        )
-        return product
-
-    return do_add_product_to_org
-
-
-@pytest.fixture
 def add_plan_to_product():
     def do_add_plan_to_product(product):
+        from metering_billing.models import PlanTemplate
+
         (plan,) = baker.make(
             PlanTemplate,
             organization=product.organization,

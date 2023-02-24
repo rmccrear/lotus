@@ -128,7 +128,7 @@ def alerts_test_common_setup(
             "name": "test_subscription",
             "start_date": now_utc() - timedelta(days=5),
             "customer_id": customer.customer_id,
-            "plan_id": billing_plan.plan.plan_id,
+            "plan_id": billing_plan.plan_template.plan_id,
         }
         setup_dict["payload_sr"] = payload
         setup_dict["customer"] = customer

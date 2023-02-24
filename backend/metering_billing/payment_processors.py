@@ -1128,7 +1128,7 @@ class StripeConnector(PaymentProcesor):
             tax_behavior = "inclusive"
             sr = line_item.associated_subscription_record
             metadata = {
-                "plan_name": sr.billing_plan.plan.plan_name,
+                "plan_name": sr.billing_plan.plan_template.plan_name,
             }
             filters = sr.filters.all()
             for f in filters:

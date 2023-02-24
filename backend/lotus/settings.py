@@ -600,7 +600,6 @@ SPECTACULAR_SETTINGS = {
         "MetricGranularityEnum": "metering_billing.utils.enums.METRIC_GRANULARITY.choices",
         "PlanVersionStatusEnum": "metering_billing.utils.enums.PLAN_VERSION_STATUS.choices",
         "PlanStatusEnum": "metering_billing.utils.enums.PLAN_STATUS.choices",
-        "ProductStatusEnum": "metering_billing.utils.enums.PRODUCT_STATUS.choices",
         "FailureStatusEnum": ["eror"],
         "SuccessStatusEnum": ["success"],
         "TrackEventSuccessEnum": ["all", "some"],

@@ -263,7 +263,7 @@ class TestArchiveMetric:
 
         payload = {"status": METRIC_STATUS.ARCHIVED}
         assert billing_plan.status == PLAN_VERSION_STATUS.ACTIVE
-        assert billing_plan.plan.status == PLAN_STATUS.ACTIVE
+        assert billing_plan.plan_template.status == PLAN_STATUS.ACTIVE
         assert billing_plan.plan_components.count() == 3
         all_pcs = billing_plan.plan_components.all()
         assert (
@@ -1584,8 +1584,8 @@ class TestCustomSQLMetrics:
             cost_per_batch=100,
             metric_units_per_batch=1,
         )
-        billing_plan.plan.display_version = billing_plan
-        billing_plan.plan.save()
+        billing_plan.plan_template.display_version = billing_plan
+        billing_plan.plan_template.save()
         now = now_utc()
         with (
             mock.patch(
@@ -1611,7 +1611,7 @@ class TestCustomSQLMetrics:
             "name": "test_subscription",
             "start_date": now_utc() - relativedelta(days=5),
             "customer_id": customer.customer_id,
-            "plan_id": billing_plan.plan.plan_id,
+            "plan_id": billing_plan.plan_template.plan_id,
         }
         response = setup_dict["client"].post(
             reverse("subscription-add"),
@@ -1696,8 +1696,8 @@ class TestCustomSQLMetrics:
             cost_per_batch=100,
             metric_units_per_batch=1,
         )
-        billing_plan.plan.display_version = billing_plan
-        billing_plan.plan.save()
+        billing_plan.plan_template.display_version = billing_plan
+        billing_plan.plan_template.save()
         now = now_utc()
         with (
             mock.patch(
@@ -1723,7 +1723,7 @@ class TestCustomSQLMetrics:
             "name": "test_subscription",
             "start_date": now_utc() - relativedelta(days=5),
             "customer_id": customer.customer_id,
-            "plan_id": billing_plan.plan.plan_id,
+            "plan_id": billing_plan.plan_template.plan_id,
         }
         response = setup_dict["client"].post(
             reverse("subscription-add"),
@@ -1808,8 +1808,8 @@ class TestCustomSQLMetrics:
             cost_per_batch=100,
             metric_units_per_batch=1,
         )
-        billing_plan.plan.display_version = billing_plan
-        billing_plan.plan.save()
+        billing_plan.plan_template.display_version = billing_plan
+        billing_plan.plan_template.save()
         now = now_utc()
         with (
             mock.patch(
@@ -1835,7 +1835,7 @@ class TestCustomSQLMetrics:
             "name": "test_subscription",
             "start_date": now_utc() - relativedelta(days=5),
             "customer_id": customer.customer_id,
-            "plan_id": billing_plan.plan.plan_id,
+            "plan_id": billing_plan.plan_template.plan_id,
         }
         response = setup_dict["client"].post(
             reverse("subscription-add"),
@@ -1942,8 +1942,8 @@ class TestCustomSQLMetrics:
             cost_per_batch=100,
             metric_units_per_batch=1,
         )
-        billing_plan.plan.display_version = billing_plan
-        billing_plan.plan.save()
+        billing_plan.plan_template.display_version = billing_plan
+        billing_plan.plan_template.save()
         now = now_utc()
         with (
             mock.patch(
@@ -1969,7 +1969,7 @@ class TestCustomSQLMetrics:
             "name": "test_subscription",
             "start_date": now_utc() - relativedelta(days=5),
             "customer_id": customer.customer_id,
-            "plan_id": billing_plan.plan.plan_id,
+            "plan_id": billing_plan.plan_template.plan_id,
         }
         response = setup_dict["client"].post(
             reverse("subscription-add"),
@@ -2152,8 +2152,8 @@ class TestCustomSQLMetrics:
             cost_per_batch=100,
             metric_units_per_batch=1,
         )
-        billing_plan.plan.display_version = billing_plan
-        billing_plan.plan.save()
+        billing_plan.plan_template.display_version = billing_plan
+        billing_plan.plan_template.save()
         now = now_utc()
         with (
             mock.patch(
@@ -2179,7 +2179,7 @@ class TestCustomSQLMetrics:
             "name": "test_subscription",
             "start_date": now_utc() - relativedelta(days=5),
             "customer_id": customer.customer_id,
-            "plan_id": billing_plan.plan.plan_id,
+            "plan_id": billing_plan.plan_template.plan_id,
         }
         response = setup_dict["client"].post(
             reverse("subscription-add"),

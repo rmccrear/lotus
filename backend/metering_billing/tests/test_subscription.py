@@ -131,7 +131,7 @@ def subscription_test_common_setup(
             "name": "test_subscription",
             "start_date": now_utc() - timedelta(days=5),
             "customer_id": customer.customer_id,
-            "plan_id": billing_plan.plan.plan_id,
+            "plan_id": billing_plan.plan_template.plan_id,
         }
         setup_dict["payload"] = payload
         setup_dict["customer"] = customer
@@ -400,7 +400,7 @@ class TestUpdateSub:
             "name": "test_subscription",
             "start_date": now_utc() - timedelta(days=5),
             "customer_id": setup_dict["customer"].customer_id,
-            "plan_id": setup_dict["billing_plan"].plan.plan_id,
+            "plan_id": setup_dict["billing_plan"].plan_template.plan_id,
         }
         response = setup_dict["client"].post(
             reverse("subscription-add"),
@@ -472,7 +472,7 @@ class TestUpdateSub:
             "name": "test_subscription",
             "start_date": now_utc() - timedelta(days=5),
             "customer_id": setup_dict["customer"].customer_id,
-            "plan_id": setup_dict["billing_plan"].plan.plan_id,
+            "plan_id": setup_dict["billing_plan"].plan_template.plan_id,
         }
         response = setup_dict["client"].post(
             reverse("subscription-add"),
@@ -552,7 +552,7 @@ class TestUpdateSub:
             "name": "test_subscription",
             "start_date": now_utc() - timedelta(days=5),
             "customer_id": setup_dict["customer"].customer_id,
-            "plan_id": setup_dict["billing_plan"].plan.plan_id,
+            "plan_id": setup_dict["billing_plan"].plan_template.plan_id,
         }
         response = setup_dict["client"].post(
             reverse("subscription-add"),

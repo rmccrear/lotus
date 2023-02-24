@@ -41,7 +41,6 @@ from metering_billing.utils import (
     now_plus_day,
     now_utc,
     periods_bwn_twodates,
-    product_uuid,
 )
 from metering_billing.utils.enums import (
     ACCOUNTS_RECEIVABLE_TRANSACTION_TYPES,
@@ -63,10 +62,8 @@ from metering_billing.utils.enums import (
     ORGANIZATION_SETTING_NAMES,
     PAYMENT_PROCESSORS,
     PLAN_DURATION,
-    PLAN_STATUS,
     PLAN_VERSION_STATUS,
     PRICE_ADJUSTMENT_TYPE,
-    PRODUCT_STATUS,
     REPLACE_IMMEDIATELY_TYPE,
     SUPPORTED_CURRENCIES,
     SUPPORTED_CURRENCIES_VERSION,
@@ -555,27 +552,6 @@ class User(AbstractUser):
         super(User, self).save(*args, **kwargs)
 
 
-class Product(models.Model):
-    """
-    This model is used to store the products that are available to be purchased.
-    """
-
-    name = models.CharField(max_length=100, blank=False)
-    description = models.TextField(null=True, blank=True)
-    organization = models.ForeignKey(
-        Organization, on_delete=models.CASCADE, related_name="products"
-    )
-    product_id = models.SlugField(default=product_uuid, max_length=100, unique=True)
-    status = models.CharField(choices=PRODUCT_STATUS.choices, max_length=40)
-    history = HistoricalRecords()
-
-    class Meta:
-        unique_together = ("organization", "product_id")
-
-    def __str__(self):
-        return f"{self.name}"
-
-
 class BaseCustomerManager(models.Manager):
     def get_queryset(self):
         return super().get_queryset().filter(deleted__isnull=True)
@@ -730,7 +706,9 @@ class Customer(models.Model):
         for subscription in customer_subscriptions:
             sub_dict = subscription.get_usage_and_revenue()
             del sub_dict["components"]
-            sub_dict["billing_plan_name"] = subscription.billing_plan.plan.plan_name
+            sub_dict[
+                "billing_plan_name"
+            ] = subscription.billing_plan.plan_template.plan_name
             subscription_usages["subscriptions"].append(sub_dict)
             subscription_usages["sub_objects"].append(subscription)
 
@@ -1897,51 +1875,51 @@ class RecurringCharge(models.Model):
         ).aggregate(Sum("subtotal"))["subtotal__sum"] or Decimal(0.0)
 
 
+class PlanVersionManager(models.Manager):
+    def active(self, time=None):
+        if time is None:
+            time = now_utc()
+        return self.filter(
+            Q(not_active_before__lte=time)
+            & ((Q(not_active_after__gte=time) | Q(not_active_after__isnull=True)))
+        )
+
+    def ended(self, time=None):
+        if time is None:
+            time = now_utc()
+        return self.filter(not_active_after__lt=time)
+
+    def not_started(self, time=None):
+        if time is None:
+            time = now_utc()
+        return self.filter(not_active_before__gt=time)
+
+
 class PlanVersion(models.Model):
+    version_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     organization = models.ForeignKey(
         Organization,
         on_delete=models.CASCADE,
         related_name="plan_versions",
     )
-    version_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
-    description = models.TextField(null=True, blank=True)
-    version = models.PositiveSmallIntegerField()
-    usage_billing_frequency = models.CharField(
-        max_length=40, choices=USAGE_BILLING_FREQUENCY.choices, null=True, blank=True
-    )
-    plan = models.ForeignKey(
+    plan_template = models.ForeignKey(
         "PlanTemplate", on_delete=models.CASCADE, related_name="versions"
     )
-    status = models.CharField(max_length=40, choices=PLAN_VERSION_STATUS.choices)
+    name_override = models.TextField(default=None, null=True, blank=True)
+    version = models.PositiveSmallIntegerField()
     replace_with = models.ForeignKey(
         "self", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
     )
-    transition_to = models.ForeignKey(
-        "PlanTemplate",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="transition_from",
-    )
+
+    is_custom = models.BooleanField(default=False)
+    customers = models.ManyToManyField(Customer, related_name="plan_versions")
+
+    # ACTUAL BILLING SPEC
     features = models.ManyToManyField(Feature, blank=True)
-    price_adjustment = models.ForeignKey(
-        "PriceAdjustment", on_delete=models.SET_NULL, null=True, blank=True
-    )
-    day_anchor = models.SmallIntegerField(
-        validators=[MinValueValidator(1), MaxValueValidator(31)],
-        null=True,
-        blank=True,
-    )
-    month_anchor = models.SmallIntegerField(
-        validators=[MinValueValidator(1), MaxValueValidator(12)],
-        null=True,
-        blank=True,
-    )
-    created_on = models.DateTimeField(default=now_utc)
-    created_by = models.ForeignKey(
-        User,
+    addon_spec = models.OneToOneField(
+        "AddOnSpecification",
         on_delete=models.SET_NULL,
-        related_name="created_plan_versions",
+        related_name="plan_version",
         null=True,
         blank=True,
     )
@@ -1952,7 +1930,41 @@ class PlanVersion(models.Model):
         null=True,
         blank=True,
     )
+    price_adjustment = models.ForeignKey(
+        "PriceAdjustment", on_delete=models.SET_NULL, null=True, blank=True
+    )
+
+    # META
+    created_on = models.DateTimeField(default=now_utc)
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        related_name="created_plan_versions",
+        null=True,
+        blank=True,
+    )
+    not_active_before = models.DateTimeField(default=now_utc, blank=True)
+    not_active_after = models.DateTimeField(null=True, blank=True)
+    day_anchor = models.SmallIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(31)],
+        null=True,
+        blank=True,
+    )
+    month_anchor = models.SmallIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(12)],
+        null=True,
+        blank=True,
+    )
     history = HistoricalRecords()
+    objects = PlanVersionManager()
+
+    # IMMUTABLE DETERMNINED BY PLAN TEMPLATE
+    plan_duration = models.CharField(
+        choices=PLAN_DURATION.choices,
+        max_length=40,
+        help_text="Duration of the plan",
+        default=PLAN_DURATION.MONTHLY,
+    )
 
     class Meta:
         constraints = [
@@ -1961,12 +1973,13 @@ class PlanVersion(models.Model):
             ),
         ]
         indexes = [
-            models.Index(fields=["organization", "status", "plan"]),
             models.Index(fields=["organization", "version_id"]),
         ]
 
     def __str__(self) -> str:
-        return str(self.plan) + " v" + str(self.version)
+        if self.name_override:
+            return self.name_override
+        return str(self.plan)
 
     def num_active_subs(self):
         cnt = self.subscription_records.active().count()
@@ -1974,13 +1987,12 @@ class PlanVersion(models.Model):
 
     def save(self, *args, **kwargs):
         version_usage_billing_frequency = self.usage_billing_frequency
-        plan_duration = self.plan.plan_duration
-        if plan_duration == PLAN_DURATION.MONTHLY:
+        if self.plan_duration == PLAN_DURATION.MONTHLY:
             if version_usage_billing_frequency == USAGE_BILLING_FREQUENCY.QUARTERLY:
                 version_usage_billing_frequency = USAGE_BILLING_FREQUENCY.MONTHLY
             elif version_usage_billing_frequency == USAGE_BILLING_FREQUENCY.MONTHLY:
                 version_usage_billing_frequency = USAGE_BILLING_FREQUENCY.END_OF_PERIOD
-        elif plan_duration == PLAN_DURATION.QUARTERLY:
+        elif self.plan_duration == PLAN_DURATION.QUARTERLY:
             if version_usage_billing_frequency == USAGE_BILLING_FREQUENCY.QUARTERLY:
                 version_usage_billing_frequency = USAGE_BILLING_FREQUENCY.END_OF_PERIOD
         self.usage_billing_frequency = version_usage_billing_frequency
@@ -1991,6 +2003,8 @@ class PlanVersion(models.Model):
                 self.pricing_unit = PricingUnit.objects.get(
                     organization=self.organization, code="USD"
                 )
+        if self.customers.count() > 0:
+            self.is_custom = True
         super().save(*args, **kwargs)
 
 
@@ -2029,12 +2043,12 @@ class PriceAdjustment(models.Model):
 
 class BasePlanManager(models.Manager):
     def get_queryset(self):
-        return super().get_queryset().filter(addon_spec__isnull=True)
+        return super().get_queryset().filter(is_addon=False, deleted__isnull=True)
 
 
 class AddOnPlanManager(models.Manager):
     def get_queryset(self):
-        return super().get_queryset().filter(addon_spec__isnull=False)
+        return super().get_queryset().filter(is_addon=True, deleted__isnull=True)
 
 
 class AddOnSpecification(models.Model):
@@ -2060,66 +2074,37 @@ class AddOnSpecification(models.Model):
 
 class PlanTemplate(models.Model):
     organization = models.ForeignKey(
-        Organization, on_delete=models.CASCADE, related_name="plans"
+        Organization, on_delete=models.CASCADE, related_name="plan_templates"
     )
-    plan_name = models.TextField()
-    plan_duration = models.CharField(
-        choices=PLAN_DURATION.choices,
-        max_length=40,
-        help_text="Duration of the plan",
-        null=True,
+    plan_name = models.TextField(null=True, default=None)
+    plan_template_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    is_addon = models.BooleanField(default=False)
+
+    taxjar_code = models.TextField(max_length=30, null=True, blank=True)
+
+    # RELATED
+    tags = models.ManyToManyField("Tag", blank=True, related_name="plan_templates")
+    metrics = models.ManyToManyField(
+        "Metric", blank=True, related_name="plan_templates"
     )
-    display_version = models.ForeignKey(
-        "PlanVersion",
-        on_delete=models.SET_NULL,
-        related_name="+",
-        null=True,
-        blank=True,
-        help_text="The currently active version of the plan. Customers that get signed up for this plan will be assigned this version.",
+    features = models.ManyToManyField(
+        "Feature", blank=True, related_name="plan_templates"
     )
-    parent_product = models.ForeignKey(
-        Product,
-        on_delete=models.CASCADE,
-        related_name="product_plans",
-        null=True,
-        blank=True,
-        help_text="The product that this plan belongs to",
-    )
-    status = models.CharField(
-        choices=PLAN_STATUS.choices, max_length=40, default=PLAN_STATUS.ACTIVE
-    )
-    plan_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
-    created_on = models.DateTimeField(default=now_utc)
+
+    # FIELDS
+    not_active_before = models.DateTimeField(default=now_utc, blank=True)
+    not_active_after = models.DateTimeField(null=True, blank=True)
+    created_on = models.DateTimeField(default=now_utc, null=True)
     created_by = models.ForeignKey(
         User,
         on_delete=models.SET_NULL,
-        related_name="created_plans",
+        related_name="created_plan_templates",
         null=True,
         blank=True,
     )
-    parent_plan = models.ForeignKey(
-        "self",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="child_plans",
-        help_text="If you are using our plan templating feature to create a new plan, this field will be set to the plan that you are using as a template.",
-    )
-    target_customer = models.ForeignKey(
-        Customer,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="custom_plans",
-        help_text="If you are using our plan templating feature to create a new plan, this field will be set to the customer for which this plan is designed for. Keep in mind that this field and the parent_plan field are mutually necessary.",
-    )
-    addon_spec = models.OneToOneField(
-        AddOnSpecification, on_delete=models.CASCADE, null=True, blank=True
-    )
-    tags = models.ManyToManyField("Tag", blank=True, related_name="plans")
-    created_on = models.DateTimeField(default=now_utc, null=True)
-    taxjar_code = models.TextField(max_length=30, null=True, blank=True)
+    deleted = models.DateTimeField(null=True, blank=True)
 
+    # MANAGERS
     objects = BasePlanManager()
     addons = AddOnPlanManager()
 
@@ -2141,8 +2126,7 @@ class PlanTemplate(models.Model):
             ),
         ]
         indexes = [
-            models.Index(fields=["organization", "status"]),
-            models.Index(fields=["organization", "plan_id"]),
+            models.Index(fields=["organization", "plan_template_id"]),
         ]
 
     def __str__(self):
@@ -2308,7 +2292,7 @@ class SubscriptionRecordManager(models.Manager):
     def ended(self, time=None):
         if time is None:
             time = now_utc()
-        return self.filter(end_date__lte=time)
+        return self.filter(end_date__lt=time)
 
     def not_started(self, time=None):
         if time is None:
@@ -2318,16 +2302,12 @@ class SubscriptionRecordManager(models.Manager):
 
 class BaseSubscriptionRecordManager(SubscriptionRecordManager):
     def get_queryset(self):
-        return (
-            super().get_queryset().filter(billing_plan__plan__addon_spec__isnull=True)
-        )
+        return super().get_queryset().filter(billing_plan__plan__is_addon=False)
 
 
 class AddOnSubscriptionRecordManager(SubscriptionRecordManager):
     def get_queryset(self):
-        return (
-            super().get_queryset().filter(billing_plan__plan__addon_spec__isnull=False)
-        )
+        return super().get_queryset().filter(billing_plan__plan__is_addon=True)
 
 
 class SubscriptionRecord(models.Model):
@@ -2411,8 +2391,8 @@ class SubscriptionRecord(models.Model):
         ]
 
     def __str__(self):
-        addon = "[ADDON] " if self.billing_plan.plan.addon_spec else ""
-        return f"{addon}{self.customer.customer_name}  {self.billing_plan.plan.plan_name} : {self.start_date.date()} to {self.end_date.date()}"
+        addon = "[ADDON] " if self.billing_plan.addon_spec else ""
+        return f"{addon}{self.customer.customer_name}  {self.billing_plan.plan_template.plan_name} : {self.start_date.date()} to {self.end_date.date()}"
 
     def save(self, *args, **kwargs):
         new_filters = kwargs.pop("subscription_filters", [])
@@ -2424,7 +2404,7 @@ class SubscriptionRecord(models.Model):
                 self.billing_plan.month_anchor,
             )
             self.end_date = calculate_end_date(
-                self.billing_plan.plan.plan_duration,
+                self.billing_plan.plan_duration,
                 self.start_date,
                 timezone,
                 day_anchor=day_anchor,
@@ -2432,7 +2412,7 @@ class SubscriptionRecord(models.Model):
             )
         if not self.unadjusted_duration_microseconds:
             scheduled_end_date = calculate_end_date(
-                self.billing_plan.plan.plan_duration, self.start_date, timezone
+                self.billing_plan.plan_duration, self.start_date, timezone
             )
             self.unadjusted_duration_microseconds = (
                 scheduled_end_date - self.start_date

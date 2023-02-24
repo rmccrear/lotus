@@ -1097,7 +1097,7 @@ class GaugeHandler(MetricHandler):
             groupby = []
         metric_granularity = metric.granularity
         if metric_granularity == METRIC_GRANULARITY.TOTAL:
-            plan_duration = subscription_record.billing_plan.plan.plan_duration
+            plan_duration = subscription_record.billing_plan.plan_duration
             metric_granularity = (
                 METRIC_GRANULARITY.YEAR
                 if plan_duration == PLAN_DURATION.YEARLY
@@ -1183,7 +1183,7 @@ class GaugeHandler(MetricHandler):
             groupby = []
         metric_granularity = metric.granularity
         if metric_granularity == METRIC_GRANULARITY.TOTAL:
-            plan_duration = subscription_record.billing_plan.plan.plan_duration
+            plan_duration = subscription_record.billing_plan.plan_duration
             metric_granularity = (
                 METRIC_GRANULARITY.YEAR
                 if plan_duration == PLAN_DURATION.YEARLY
@@ -1265,7 +1265,7 @@ class GaugeHandler(MetricHandler):
             groupby = []
         metric_granularity = metric.granularity
         if metric_granularity == METRIC_GRANULARITY.TOTAL:
-            plan_duration = subscription_record.billing_plan.plan.plan_duration
+            plan_duration = subscription_record.billing_plan.plan_duration
             metric_granularity = (
                 METRIC_GRANULARITY.YEAR
                 if plan_duration == PLAN_DURATION.YEARLY

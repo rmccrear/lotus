@@ -289,12 +289,10 @@ class CustomerViewSet(PermissionPolicyMixin, viewsets.ModelViewSet):
         customer.uuidv5_customer_id = None
         customer.save()
         subscription_records = customer.subscription_records.active().all()
-        n_subs = subscription_records.filter(
-            billing_plan__plan__addon_spec__isnull=True
-        ).count()
+        n_subs = subscription_records.filter(billing_plan__plan__is_addon=False).count()
         return_data["num_subscriptions_deleted"] = n_subs
         n_addons = subscription_records.filter(
-            billing_plan__plan__addon_spec__isnull=False
+            billing_plan__plan__is_addon=True
         ).count()
         return_data["num_addons_deleted"] = n_addons
         subscription_records.update(
@@ -439,7 +437,7 @@ class CustomerViewSet(PermissionPolicyMixin, viewsets.ModelViewSet):
 
 class PlanTemplateViewSet(PermissionPolicyMixin, viewsets.ModelViewSet):
     serializer_class = PlanTemplateSerializer
-    lookup_field = "plan_id"
+    lookup_field = "plan_template_id"
     http_method_names = ["get", "head"]
     queryset = PlanTemplate.objects.all().order_by(
         F("created_on").desc(nulls_last=False), F("plan_name")
@@ -705,8 +703,8 @@ class SubscriptionViewSet(
                 "subscription_filters": subscription_filters,
                 "customer_id": dict_params.get("customer_id"),
             }
-            if dict_params.get("plan_id"):
-                data["plan_id"] = dict_params.get("plan_id")
+            if dict_params.get("plan_template_id"):
+                data["plan_template_id"] = dict_params.get("plan_template_id")
             if self.action == "edit":
                 serializer = SubscriptionRecordFilterSerializer(
                     data=data, context=context
@@ -786,7 +784,9 @@ class SubscriptionViewSet(
             data = {
                 "subscription_filters": subscription_filters,
                 "attached_customer_id": dict_params.get("attached_customer_id"),
-                "attached_plan_id": dict_params.get("attached_plan_id"),
+                "attached_plan_template_id": dict_params.get(
+                    "attached_plan_template_id"
+                ),
                 "addon_id": dict_params.get("addon_id"),
             }
             serializer = AddonSubscriptionRecordFilterSerializer(
@@ -880,7 +880,7 @@ class SubscriptionViewSet(
                     "Invalid subscription filter. Please check your subscription filters setting."
                 )
         # check to see if subscription exists
-        duration = serializer.validated_data["billing_plan"].plan.plan_duration
+        duration = serializer.validated_data["billing_plan"].plan_duration
         billing_freq = serializer.validated_data["billing_plan"].usage_billing_frequency
         start_date = convert_to_datetime(
             serializer.validated_data["start_date"], date_behavior="min"
@@ -1000,10 +1000,7 @@ class SubscriptionViewSet(
         if replace_billing_plan:
             if replace_billing_plan == plan_to_replace:
                 raise SwitchPlanSamePlanException("Cannot switch to the same plan")
-            elif (
-                replace_billing_plan.plan.plan_duration
-                != plan_to_replace.plan.plan_duration
-            ):
+            elif replace_billing_plan.plan_duration != plan_to_replace.plan_duration:
                 raise SwitchPlanDurationMismatch(
                     "Cannot switch to a plan with a different duration"
                 )
@@ -1012,9 +1009,7 @@ class SubscriptionViewSet(
         turn_off_auto_renew = serializer.validated_data.get("turn_off_auto_renew")
         end_date = serializer.validated_data.get("end_date")
         if replace_billing_plan:
-            qs = qs.filter(
-                billing_plan__plan__addon_spec__isnull=True
-            )  # no addons in replace
+            qs = qs.filter(billing_plan__plan__is_addon=False)  # no addons in replace
             now = now_utc()
             keep_separate = usage_behavior == USAGE_BEHAVIOR.KEEP_SEPARATE
             replace_plan_metrics = {
@@ -1551,9 +1546,7 @@ class MetricAccessView(APIView):
             "access": False,
             "access_per_subscription": [],
         }
-        for sr in subscription_records.filter(
-            billing_plan__plan__addon_spec__isnull=True
-        ):
+        for sr in subscription_records.filter(billing_plan__plan__is_addon=False):
             if subscription_filters_set:
                 sr_filters_set = {(x.property_name, x.value) for x in sr.filters.all()}
                 if not subscription_filters_set.issubset(sr_filters_set):
@@ -1655,9 +1648,7 @@ class FeatureAccessView(APIView):
             "access": False,
             "access_per_subscription": [],
         }
-        for sr in subscription_records.filter(
-            billing_plan__plan__addon_spec__isnull=True
-        ):
+        for sr in subscription_records.filter(billing_plan__plan__is_addon=False):
             if subscription_filters_set:
                 sr_filters_set = {(x.property_name, x.value) for x in sr.filters.all()}
                 if not subscription_filters_set.issubset(sr_filters_set):
@@ -1998,8 +1989,8 @@ class GetCustomerFeatureAccessView(APIView):
                 )
             sub_dict = {
                 "feature_name": feature_name,
-                "plan_id": PlanTemplateUUIDField().to_representation(
-                    sub.billing_plan.plan.plan_id
+                "plan_template_id": PlanTemplateUUIDField().to_representation(
+                    sub.billing_plan.plan_template.plan_template_id
                 ),
                 "subscription_filters": subscription_filters,
                 "access": False,
@@ -2082,8 +2073,8 @@ class GetCustomerEventAccessView(APIView):
                     }
                 )
             single_sub_dict = {
-                "plan_id": PlanTemplateUUIDField().to_representation(
-                    sr.billing_plan.plan.plan_id
+                "plan_template_id": PlanTemplateUUIDField().to_representation(
+                    sr.billing_plan.plan_template.plan_template_id
                 ),
                 "subscription_filters": subscription_filters,
                 "usage_per_component": [],

@@ -7,10 +7,6 @@ import dateutil.parser
 import pytest
 import pytz
 from django.urls import reverse
-from model_bakery import baker
-from rest_framework import status
-from rest_framework.test import APIClient
-
 from metering_billing.aggregation.billable_metrics import METRIC_HANDLER_MAP
 from metering_billing.models import (
     Customer,
@@ -23,6 +19,9 @@ from metering_billing.models import (
 )
 from metering_billing.serializers.serializer_utils import DjangoJSONEncoder
 from metering_billing.utils import now_utc
+from model_bakery import baker
+from rest_framework import status
+from rest_framework.test import APIClient
 
 
 @pytest.fixture
@@ -125,7 +124,7 @@ def timezone_test_common_setup(
             "name": "test_subscription",
             "start_date": now_utc() - timedelta(days=5),
             "customer_id": customer.customer_id,
-            "plan_id": billing_plan.plan.plan_id,
+            "plan_id": billing_plan.plan_template.plan_id,
         }
         setup_dict["payload"] = payload
         setup_dict["customer"] = customer
@@ -298,7 +297,7 @@ class TestTimezones:
             "name": "test_subscription",
             "start_date": start_date.replace(tzinfo=timezone),
             "customer_id": setup_dict["customer"].customer_id,
-            "plan_id": setup_dict["billing_plan"].plan.plan_id,
+            "plan_id": setup_dict["billing_plan"].plan_template.plan_id,
         }
         params = {"status": ["active", "not_started"]}
         response = setup_dict["client"].post(

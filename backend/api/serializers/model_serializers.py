@@ -151,16 +151,16 @@ class LightweightPlanVersionSerializer(
 ):
     class Meta:
         model = PlanVersion
-        fields = ("plan_name", "plan_id", "version", "version_id")
+        fields = ("plan_name", "plan_template_id", "version", "version_id")
         extra_kwargs = {
-            "plan_id": {"required": True, "read_only": True},
+            "plan_template_id": {"required": True, "read_only": True},
             "plan_name": {"required": True, "read_only": True},
             "version": {"required": True, "read_only": True},
             "version_id": {"required": True, "read_only": True},
         }
 
-    plan_name = serializers.CharField(source="plan.plan_name")
-    plan_id = PlanTemplateUUIDField(source="plan.plan_id")
+    plan_name = serializers.CharField(source="plan_template.plan_name")
+    plan_template_id = PlanTemplateUUIDField(source="plan_template.plan_template_id")
     version_id = PlanVersionUUIDField(read_only=True)
 
 
@@ -215,7 +215,9 @@ class SubscriptionCustomerSummarySerializer(
         model = SubscriptionRecord
         fields = ("billing_plan_name", "plan_version", "end_date", "auto_renew")
 
-    billing_plan_name = serializers.CharField(source="billing_plan.plan.plan_name")
+    billing_plan_name = serializers.CharField(
+        source="billing_plan.plan_template.plan_name"
+    )
     plan_version = serializers.CharField(source="billing_plan.version")
 
 
@@ -241,7 +243,7 @@ class LightweightAddonSerializer(TimezoneFieldMixin, serializers.ModelSerializer
         source="plan_name",
     )
     addon_id = AddonUUIDField(
-        source="plan_id",
+        source="plan_template_id",
         help_text="The ID of the add-on plan.",
     )
     addon_type = serializers.SerializerMethodField()
@@ -1179,14 +1181,14 @@ class PlanNameAndIDSerializer(
         model = PlanTemplate
         fields = (
             "plan_name",
-            "plan_id",
+            "plan_template_id",
         )
         extra_kwargs = {
             "plan_name": {"required": True},
-            "plan_id": {"required": True},
+            "plan_template_id": {"required": True},
         }
 
-    plan_id = PlanTemplateUUIDField()
+    plan_template_id = PlanTemplateUUIDField()
 
 
 class InvoiceUpdateSerializer(
@@ -1243,7 +1245,7 @@ class PlanTemplateSerializer(
             "plan_duration",
             "status",
             "external_links",
-            "plan_id",
+            "plan_template_id",
             "parent_plan",
             "target_customer",
             "display_version",
@@ -1256,7 +1258,7 @@ class PlanTemplateSerializer(
             "plan_duration": {"required": True},
             "status": {"required": True},
             "external_links": {"required": True},
-            "plan_id": {"required": True},
+            "plan_template_id": {"required": True},
             "parent_plan": {"required": True, "allow_null": True},
             "target_customer": {"required": True, "allow_null": True},
             "display_version": {"required": True},
@@ -1265,7 +1267,7 @@ class PlanTemplateSerializer(
             "tags": {"required": True},
         }
 
-    plan_id = PlanTemplateUUIDField()
+    plan_template_id = PlanTemplateUUIDField()
     parent_plan = PlanNameAndIDSerializer(allow_null=True)
     target_customer = LightweightCustomerSerializer(allow_null=True)
     display_version = PlanVersionSerializer()
@@ -1341,7 +1343,7 @@ class SubscriptionRecordCreateSerializer(
             "is_new",
             "subscription_filters",
             "customer_id",
-            "plan_id",
+            "plan_template_id",
         )
 
     start_date = serializers.DateTimeField(
@@ -1370,22 +1372,22 @@ class SubscriptionRecordCreateSerializer(
         write_only=True,
         help_text="The id provided when creating the customer",
     )
-    plan_id = SlugRelatedFieldWithOrganization(
-        slug_field="plan_id",
+    plan_template_id = SlugRelatedFieldWithOrganization(
+        slug_field="plan_template_id",
         source="billing_plan.plan",
         queryset=PlanTemplate.objects.all(),
         write_only=True,
-        help_text="The Lotus plan_id, found in the billing plan object",
+        help_text="The Lotus plan_template_id, found in the billing plan object",
     )
 
     def validate(self, data):
         # extract the plan version from the plan
         data["billing_plan"] = data["billing_plan"]["plan"].display_version
         # check that if the plan is designed for a specific customer, that the customer is that customer
-        tc = data["billing_plan"].plan.target_customer
-        if tc is not None and tc != data["customer"]:
+        target_customers = data["billing_plan"].customers.all()
+        if target_customers.count() > 0 and data["customer"] not in target_customers:
             raise serializers.ValidationError(
-                f"This plan is for a customer with customer_id {tc.customer_id}, not {data['customer'].customer_id}"
+                "This plan is not allowed for this customer."
             )
         return data
 
@@ -1560,7 +1562,7 @@ class SubscriptionRecordFilterSerializer(serializers.Serializer):
     plan_id = SlugRelatedFieldWithOrganization(
         slug_field="plan_id",
         source="billing_plan.plan",
-        queryset=PlanTemplate.objects.filter(addon_spec__isnull=True),
+        queryset=PlanTemplate.objects.all(),
         required=True,
         help_text="Filter to a specific plan.",
     )
@@ -1581,7 +1583,7 @@ class SubscriptionRecordFilterSerializerDelete(SubscriptionRecordFilterSerialize
     plan_id = SlugRelatedFieldWithOrganization(
         slug_field="plan_id",
         source="billing_plan.plan",
-        queryset=PlanTemplate.objects.filter(addon_spec__isnull=True),
+        queryset=PlanTemplate.objects.all(),
         required=False,
         help_text="Filter to a specific plan. If not specified, all plans will be included in the cancellation request.",
     )
@@ -1617,7 +1619,7 @@ class ListSubscriptionRecordFilter(SubscriptionRecordFilterSerializer):
     plan_id = SlugRelatedFieldWithOrganization(
         slug_field="plan_id",
         source="billing_plan.plan",
-        queryset=PlanTemplate.objects.filter(addon_spec__isnull=True),
+        queryset=PlanTemplate.objects.all(),
         required=False,
         help_text="Filter to a specific plan.",
     )
@@ -1645,7 +1647,7 @@ class AddonSubscriptionRecordFilterSerializer(serializers.Serializer):
     )
     attached_plan_id = SlugRelatedFieldWithOrganization(
         slug_field="plan_id",
-        queryset=PlanTemplate.objects.filter(addon_spec__isnull=True),
+        queryset=PlanTemplate.objects.all(),
         required=True,
         help_text="Filter to a specific plan.",
     )

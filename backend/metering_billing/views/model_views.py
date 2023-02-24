@@ -33,7 +33,6 @@ from metering_billing.models import (
     PlanTemplate,
     PlanVersion,
     PricingUnit,
-    Product,
     UsageAlert,
     User,
     WebhookEndpoint,
@@ -75,7 +74,6 @@ from metering_billing.serializers.model_serializers import (
     PlanVersionDetailSerializer,
     PlanVersionUpdateSerializer,
     PricingUnitSerializer,
-    ProductSerializer,
     UsageAlertCreateSerializer,
     UsageAlertSerializer,
     UserSerializer,
@@ -921,51 +919,6 @@ class BacktestViewSet(PermissionPolicyMixin, viewsets.ModelViewSet):
                     else organization.organization_name + " (API Key)"
                 ),
                 event=f"{self.action}_backtest",
-                properties={"organization": organization.organization_name},
-            )
-        return response
-
-    def get_serializer_context(self):
-        context = super().get_serializer_context()
-        organization = self.request.organization
-        context.update({"organization": organization})
-        return context
-
-
-class ProductViewSet(viewsets.ModelViewSet):
-    serializer_class = ProductSerializer
-    lookup_field = "product_id"
-    http_method_names = [
-        "get",
-        "post",
-        "head",
-    ]
-    queryset = Product.objects.all()
-
-    def get_queryset(self):
-        organization = self.request.organization
-        return Product.objects.filter(organization=organization)
-
-    def perform_create(self, serializer):
-        serializer.save(organization=self.request.organization)
-
-    def dispatch(self, request, *args, **kwargs):
-        response = super().dispatch(request, *args, **kwargs)
-        if status.is_success(response.status_code):
-            try:
-                username = self.request.user.username
-            except Exception:
-                username = None
-            organization = self.request.organization
-            posthog.capture(
-                POSTHOG_PERSON
-                if POSTHOG_PERSON
-                else (
-                    username
-                    if username
-                    else organization.organization_name + " (API Key)"
-                ),
-                event=f"{self.action}_product",
                 properties={"organization": organization.organization_name},
             )
         return response

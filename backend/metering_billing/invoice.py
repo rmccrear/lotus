@@ -177,7 +177,7 @@ def calculate_subscription_record_flat_fees(subscription_record, invoice):
             pass
         else:
             billing_plan = subscription_record.billing_plan
-            billing_plan_name = billing_plan.plan.plan_name
+            billing_plan_name = billing_plan.plan_template.plan_name
             billing_plan_version = billing_plan.version
             start = subscription_record.start_date
             end = subscription_record.end_date
@@ -292,14 +292,14 @@ def charge_next_plan_flat_fee(
             recurring_charge.charge_timing
             == RecurringCharge.ChargeTimingType.IN_ADVANCE
         )
-        if next_bp.plan.addon_spec:
+        if next_bp.addon_spec:
             next_bp_duration = find_next_billing_plan(
                 subscription_record.parent
-            ).plan.plan_duration
-            name = f"{next_bp.plan.plan_name} ({recurring_charge.name}) - Next Period [Add-on]"
+            ).plan_duration
+            name = f"{next_bp.plan_template.plan_name} ({recurring_charge.name}) - Next Period [Add-on]"
         else:
-            next_bp_duration = next_bp.plan.plan_duration
-            name = f"{next_bp.plan.plan_name} v{next_bp.version} ({recurring_charge.name}) - Next Period"
+            next_bp_duration = next_bp.plan_duration
+            name = f"{next_bp.plan_template.plan_name} v{next_bp.version} ({recurring_charge.name}) - Next Period"
         if charge_in_advance and recurring_charge.amount > 0:
             new_start = date_as_min_dt(
                 subscription_record.end_date + relativedelta(days=1), timezone
@@ -356,7 +356,7 @@ def apply_plan_discounts(invoice):
             difference = new_amount_due - plan_amount
             if difference != 0:
                 InvoiceLineItem.objects.create(
-                    name=f"{pv.plan.plan_name} v{pv.version} {price_adj_name}",
+                    name=f"{pv.plan_template.plan_name} v{pv.version} {price_adj_name}",
                     start_date=invoice.issue_date,
                     end_date=invoice.issue_date,
                     quantity=None,

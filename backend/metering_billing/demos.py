@@ -31,7 +31,6 @@ from metering_billing.models import (
     PriceAdjustment,
     PriceTier,
     PricingUnit,
-    Product,
     RecurringCharge,
     SubscriptionRecord,
     TeamInviteToken,
@@ -104,7 +103,6 @@ def setup_demo3(
         Customer.objects.filter(organization=organization).delete()
         Event.objects.filter(organization=organization).delete()
         Metric.objects.filter(organization=organization).delete()
-        Product.objects.filter(organization=organization).delete()
         CustomerBalanceAdjustment.objects.filter(organization=organization).delete()
         Feature.objects.filter(organization=organization).delete()
         Invoice.objects.filter(organization=organization).delete()
@@ -690,7 +688,6 @@ def setup_demo4(
         Customer.objects.filter(organization=organization).delete()
         Event.objects.filter(organization=organization).delete()
         Metric.objects.filter(organization=organization).delete()
-        Product.objects.filter(organization=organization).delete()
         CustomerBalanceAdjustment.objects.filter(organization=organization).delete()
         Feature.objects.filter(organization=organization).delete()
         Invoice.objects.filter(organization=organization).delete()

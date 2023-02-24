@@ -25,7 +25,6 @@ from metering_billing.models import (
     PriceAdjustment,
     PriceTier,
     PricingUnit,
-    Product,
     RecurringCharge,
     SubscriptionRecord,
     Tag,
@@ -1031,12 +1030,6 @@ class PlanComponentCreateSerializer(api_serializers.PlanComponentSerializer):
         return pc
 
 
-class ProductSerializer(TimezoneFieldMixin, serializers.ModelSerializer):
-    class Meta:
-        model = Product
-        fields = ("name", "description", "product_id", "status")
-
-
 class PlanVersionUpdateSerializer(TimezoneFieldMixin, serializers.ModelSerializer):
     class Meta:
         model = PlanVersion
@@ -1360,7 +1353,7 @@ class PlanVersionCreateSerializer(TimezoneFieldMixin, serializers.ModelSerialize
             billing_plan.price_adjustment = pa
         billing_plan.save()
         if make_active:
-            billing_plan.plan.make_version_active(
+            billing_plan.plan_template.make_version_active(
                 billing_plan, make_active_type, replace_immediately_type
             )
         return billing_plan
@@ -1753,7 +1746,7 @@ class PlanVersionActionSerializer(PlanVersionDetailSerializer):
     object_type = serializers.SerializerMethodField()
 
     def get_string_repr(self, obj):
-        return obj.plan.plan_name + " v" + str(obj.version)
+        return obj.plan_template.plan_name + " v" + str(obj.version)
 
     def get_object_type(self, obj):
         return "Plan Version"
@@ -1981,7 +1974,7 @@ class DraftInvoiceSerializer(InvoiceSerializer):
             ).order_by("name", "start_date", "subtotal")
             sr = line_items[0].associated_subscription_record
             grouped_line_item_dict = {
-                "plan_name": sr.billing_plan.plan.plan_name,
+                "plan_name": sr.billing_plan.plan_template.plan_name,
                 "subscription_filters": sr.filters.all(),
                 "subtotal": line_items.aggregate(Sum("subtotal"))["subtotal__sum"] or 0,
                 "start_date": sr.start_date,

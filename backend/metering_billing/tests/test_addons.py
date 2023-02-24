@@ -229,7 +229,7 @@ def addon_test_common_setup(
             "name": "test_subscription",
             "start_date": now_utc() - timedelta(days=5),
             "customer_id": customer.customer_id,
-            "plan_id": billing_plan.plan.plan_id,
+            "plan_id": billing_plan.plan_template.plan_id,
         }
         setup_dict["payload"] = payload
         setup_dict["customer"] = customer
@@ -268,7 +268,7 @@ class TestAttachAddon:
         customer_id = data["customer"]["customer_id"]
         assert auto_renew is True
         assert len(subscription_filters) == 0
-        assert setup_dict["billing_plan"].plan.plan_id.hex in billing_plan_id
+        assert setup_dict["billing_plan"].plan_template.plan_id.hex in billing_plan_id
         assert fully_billed is False
 
         invoice_before = len(Invoice.objects.all())
@@ -323,7 +323,7 @@ class TestAttachAddon:
         customer_id = data["customer"]["customer_id"]
         assert auto_renew is True
         assert len(subscription_filters) == 0
-        assert setup_dict["billing_plan"].plan.plan_id.hex in billing_plan_id
+        assert setup_dict["billing_plan"].plan_template.plan_id.hex in billing_plan_id
         assert fully_billed is False
 
         invoice_before = len(Invoice.objects.all())
@@ -381,7 +381,7 @@ class TestAttachAddon:
         customer_id = data["customer"]["customer_id"]
         assert auto_renew is True
         assert len(subscription_filters) == 0
-        assert setup_dict["billing_plan"].plan.plan_id.hex in billing_plan_id
+        assert setup_dict["billing_plan"].plan_template.plan_id.hex in billing_plan_id
         assert fully_billed is False
 
         invoice_before = len(Invoice.objects.all())
@@ -449,7 +449,7 @@ class TestAttachAddon:
         customer_id = data["customer"]["customer_id"]
         assert auto_renew is True
         assert len(subscription_filters) == 0
-        assert setup_dict["billing_plan"].plan.plan_id.hex in billing_plan_id
+        assert setup_dict["billing_plan"].plan_template.plan_id.hex in billing_plan_id
         assert fully_billed is False
         payload = {
             "customer_id": setup_dict["customer"].customer_id,
@@ -542,7 +542,7 @@ class TestAttachAddon:
         customer_id = data["customer"]["customer_id"]
         assert auto_renew is True
         assert len(subscription_filters) == 0
-        assert setup_dict["billing_plan"].plan.plan_id.hex in billing_plan_id
+        assert setup_dict["billing_plan"].plan_template.plan_id.hex in billing_plan_id
         assert fully_billed is False
 
         invoice_before = len(Invoice.objects.all())
@@ -596,7 +596,7 @@ class TestAttachAddon:
         customer_id = data["customer"]["customer_id"]
         assert auto_renew is True
         assert len(subscription_filters) == 0
-        assert setup_dict["billing_plan"].plan.plan_id.hex in billing_plan_id
+        assert setup_dict["billing_plan"].plan_template.plan_id.hex in billing_plan_id
         assert fully_billed is False
 
         invoice_before = len(Invoice.objects.all())
@@ -690,7 +690,7 @@ class TestAttachAddon:
         customer_id = data["customer"]["customer_id"]
         assert auto_renew is True
         assert len(subscription_filters) == 0
-        assert setup_dict["billing_plan"].plan.plan_id.hex in billing_plan_id
+        assert setup_dict["billing_plan"].plan_template.plan_id.hex in billing_plan_id
         assert fully_billed is False
         assert SubscriptionRecord.objects.all().count() == 1
 
@@ -761,7 +761,7 @@ class TestAttachAddon:
         customer_id = data["customer"]["customer_id"]
         assert auto_renew is True
         assert len(subscription_filters) == 0
-        assert setup_dict["billing_plan"].plan.plan_id.hex in billing_plan_id
+        assert setup_dict["billing_plan"].plan_template.plan_id.hex in billing_plan_id
         assert fully_billed is False
 
         invoice_before = len(Invoice.objects.all())
@@ -816,7 +816,7 @@ class TestUpdateAddon:
         customer_id = data["customer"]["customer_id"]
         assert auto_renew is True
         assert len(subscription_filters) == 0
-        assert setup_dict["billing_plan"].plan.plan_id.hex in billing_plan_id
+        assert setup_dict["billing_plan"].plan_template.plan_id.hex in billing_plan_id
         assert fully_billed is False
 
         invoice_before = len(Invoice.objects.all())
@@ -897,7 +897,7 @@ class TestUpdateAddon:
         customer_id = data["customer"]["customer_id"]
         assert auto_renew is True
         assert len(subscription_filters) == 0
-        assert setup_dict["billing_plan"].plan.plan_id.hex in billing_plan_id
+        assert setup_dict["billing_plan"].plan_template.plan_id.hex in billing_plan_id
         assert fully_billed is False
 
         invoice_before = len(Invoice.objects.all())
@@ -976,7 +976,7 @@ class TestUpdateAddon:
         customer_id = data["customer"]["customer_id"]
         assert auto_renew is True
         assert len(subscription_filters) == 0
-        assert setup_dict["billing_plan"].plan.plan_id.hex in billing_plan_id
+        assert setup_dict["billing_plan"].plan_template.plan_id.hex in billing_plan_id
         assert fully_billed is False
 
         invoice_before = len(Invoice.objects.all())
@@ -1056,7 +1056,7 @@ class TestUpdateAddon:
         customer_id = data["customer"]["customer_id"]
         assert auto_renew is True
         assert len(subscription_filters) == 0
-        assert setup_dict["billing_plan"].plan.plan_id.hex in billing_plan_id
+        assert setup_dict["billing_plan"].plan_template.plan_id.hex in billing_plan_id
         assert fully_billed is False
 
         invoice_before = len(Invoice.objects.all())
@@ -1135,7 +1135,7 @@ class TestCancelAddon:
         customer_id = data["customer"]["customer_id"]
         assert auto_renew is True
         assert len(subscription_filters) == 0
-        assert setup_dict["billing_plan"].plan.plan_id.hex in billing_plan_id
+        assert setup_dict["billing_plan"].plan_template.plan_id.hex in billing_plan_id
         assert fully_billed is False
 
         invoice_before = len(Invoice.objects.all())
@@ -1219,7 +1219,7 @@ class TestCancelAddon:
         customer_id = data["customer"]["customer_id"]
         assert auto_renew is True
         assert len(subscription_filters) == 0
-        assert setup_dict["billing_plan"].plan.plan_id.hex in billing_plan_id
+        assert setup_dict["billing_plan"].plan_template.plan_id.hex in billing_plan_id
         assert fully_billed is False
 
         invoice_before = len(Invoice.objects.all())
