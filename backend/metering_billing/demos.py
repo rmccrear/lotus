@@ -25,8 +25,8 @@ from metering_billing.models import (
     Metric,
     NumericFilter,
     Organization,
-    Plan,
     PlanComponent,
+    PlanTemplate,
     PlanVersion,
     PriceAdjustment,
     PriceTier,
@@ -97,10 +97,10 @@ def setup_demo3(
         WebhookEndpoint.objects.filter(organization=organization).delete()
         WebhookTrigger.objects.filter(organization=organization).delete()
         PlanVersion.objects.filter(organization=organization).delete()
-        Plan.objects.filter(
+        PlanTemplate.objects.filter(
             organization=organization, parent_plan__isnull=False
         ).delete()
-        Plan.objects.filter(organization=organization).delete()
+        PlanTemplate.objects.filter(organization=organization).delete()
         Customer.objects.filter(organization=organization).delete()
         Event.objects.filter(organization=organization).delete()
         Metric.objects.filter(organization=organization).delete()
@@ -204,7 +204,7 @@ def setup_demo3(
     num_seats = metrics_map["num_seats"]
     metrics_map["compute_cost"]
     # SET THE BILLING PLANS
-    plan = Plan.objects.create(
+    plan = PlanTemplate.objects.create(
         plan_name="Free Plan",
         organization=organization,
         plan_duration=PLAN_DURATION.MONTHLY,
@@ -233,7 +233,7 @@ def setup_demo3(
     )
     plan.display_version = free_bp
     plan.save()
-    plan = Plan.objects.create(
+    plan = PlanTemplate.objects.create(
         plan_name="10K Words Plan",
         organization=organization,
         plan_duration=PLAN_DURATION.MONTHLY,
@@ -265,7 +265,7 @@ def setup_demo3(
     )
     plan.display_version = bp_10_og
     plan.save()
-    plan = Plan.objects.create(
+    plan = PlanTemplate.objects.create(
         plan_name="25K Words Plan",
         organization=organization,
         plan_duration=PLAN_DURATION.MONTHLY,
@@ -297,7 +297,7 @@ def setup_demo3(
     )
     plan.display_version = bp_25_og
     plan.save()
-    plan = Plan.objects.create(
+    plan = PlanTemplate.objects.create(
         plan_name="50K Words Plan",
         organization=organization,
         plan_duration=PLAN_DURATION.MONTHLY,
@@ -329,7 +329,7 @@ def setup_demo3(
     )
     plan.display_version = bp_50_og
     plan.save()
-    plan = Plan.objects.create(
+    plan = PlanTemplate.objects.create(
         plan_name="10K Words Plan - UB Compute + Seats",
         organization=organization,
         plan_duration=PLAN_DURATION.MONTHLY,
@@ -374,7 +374,7 @@ def setup_demo3(
     )
     plan.display_version = bp_10_compute_seats
     plan.save()
-    plan = Plan.objects.create(
+    plan = PlanTemplate.objects.create(
         plan_name="25K Words Plan - UB Compute + Seats",
         organization=organization,
         plan_duration=PLAN_DURATION.MONTHLY,
@@ -419,7 +419,7 @@ def setup_demo3(
     )
     plan.display_version = bp_25_compute_seats
     plan.save()
-    plan = Plan.objects.create(
+    plan = PlanTemplate.objects.create(
         plan_name="50K Words Plan - UB Compute + Seats",
         organization=organization,
         plan_duration=PLAN_DURATION.MONTHLY,
@@ -686,7 +686,7 @@ def setup_demo4(
         WebhookEndpoint.objects.filter(organization=organization).delete()
         WebhookTrigger.objects.filter(organization=organization).delete()
         PlanVersion.objects.filter(organization=organization).delete()
-        Plan.objects.filter(organization=organization).delete()
+        PlanTemplate.objects.filter(organization=organization).delete()
         Customer.objects.filter(organization=organization).delete()
         Event.objects.filter(organization=organization).delete()
         Metric.objects.filter(organization=organization).delete()
@@ -807,7 +807,7 @@ def setup_demo4(
     sum_time = metrics_map["sum_time"]
     num_seats = metrics_map["num_seats"]
     # SET THE BILLING PLANS
-    plan = Plan.objects.create(
+    plan = PlanTemplate.objects.create(
         plan_name="Free Plan",
         organization=organization,
         plan_duration=PLAN_DURATION.MONTHLY,
@@ -840,7 +840,7 @@ def setup_demo4(
     )
     plan.display_version = free_bp
     plan.save()
-    plan = Plan.objects.create(
+    plan = PlanTemplate.objects.create(
         plan_name="Events-only - Basic",
         organization=organization,
         plan_duration=PLAN_DURATION.MONTHLY,
@@ -878,7 +878,7 @@ def setup_demo4(
     )
     plan.display_version = bp_basic_events
     plan.save()
-    plan = Plan.objects.create(
+    plan = PlanTemplate.objects.create(
         plan_name="Events-only - Pro",
         organization=organization,
         plan_duration=PLAN_DURATION.MONTHLY,
@@ -916,7 +916,7 @@ def setup_demo4(
     )
     plan.display_version = bp_pro_events
     plan.save()
-    plan = Plan.objects.create(
+    plan = PlanTemplate.objects.create(
         plan_name="Events + Recordings - Basic",
         organization=organization,
         plan_duration=PLAN_DURATION.MONTHLY,
@@ -961,7 +961,7 @@ def setup_demo4(
     )
     plan.display_version = bp_basic_both
     plan.save()
-    plan = Plan.objects.create(
+    plan = PlanTemplate.objects.create(
         plan_name="Events + Recordings - Pro",
         organization=organization,
         plan_duration=PLAN_DURATION.MONTHLY,
@@ -1006,7 +1006,7 @@ def setup_demo4(
     )
     plan.display_version = bp_pro_both
     plan.save()
-    plan = Plan.objects.create(
+    plan = PlanTemplate.objects.create(
         plan_name="Experimental - Events + Recording Time",
         organization=organization,
         plan_duration=PLAN_DURATION.MONTHLY,
@@ -1358,7 +1358,7 @@ def setup_paas_demo(
         ),
         _quantity=8,
     )
-    plan = Plan.objects.create(
+    plan = PlanTemplate.objects.create(
         plan_name="Basic Plan",
         organization=organization,
         plan_duration=PLAN_DURATION.MONTHLY,
@@ -1396,7 +1396,7 @@ def setup_paas_demo(
     )
     plan.display_version = basic_plan
     plan.save()
-    plan = Plan.objects.create(
+    plan = PlanTemplate.objects.create(
         plan_name="Professional Plan",
         organization=organization,
         plan_duration=PLAN_DURATION.MONTHLY,
@@ -1575,4 +1575,5 @@ def make_subscription_record(
         billing_plan=plan,
         start_date=start_date,
     )
+    return sr
     return sr

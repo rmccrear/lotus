@@ -65,8 +65,8 @@ def transfer_text_to_uuid(apps, schema_editor):
         setting.setting_id = uuid_instance
         setting.save()
 
-    Plan = apps.get_model("metering_billing", "Plan")
-    for plan in Plan.objects.all():
+    PlanTemplate = apps.get_model("metering_billing", "PlanTemplate")
+    for plan in PlanTemplate.objects.all():
         uuid_string = plan.plan_id.replace("plan_", "")
         uuid_instance = UUID(uuid_string)
         plan.plan_id = uuid_instance

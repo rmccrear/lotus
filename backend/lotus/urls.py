@@ -34,8 +34,8 @@ from metering_billing.views.model_views import (
     MetricViewSet,
     OrganizationSettingViewSet,
     OrganizationViewSet,
+    PlanTemplateViewSet,
     PlanVersionViewSet,
-    PlanViewSet,
     PricingUnitViewSet,
     ProductViewSet,
     SubscriptionViewSet,
@@ -75,7 +75,7 @@ router.register(r"features", FeatureViewSet, basename="feature")
 router.register(r"webhooks", WebhookViewSet, basename="webhook")
 router.register(r"backtests", BacktestViewSet, basename="backtest")
 router.register(r"products", ProductViewSet, basename="product")
-router.register(r"plans", PlanViewSet, basename="plan")
+router.register(r"plans", PlanTemplateViewSet, basename="plan")
 router.register(r"plan_versions", PlanVersionViewSet, basename="plan_version")
 router.register(r"events", EventViewSet, basename="event")
 router.register(r"actions", ActionViewSet, basename="action")
@@ -102,7 +102,7 @@ router.register(r"usage_alerts", UsageAlertViewSet, basename="usage_alert")
 # api router
 api_router = routers.DefaultRouter()
 api_router.register(r"customers", api_views.CustomerViewSet, basename="customer")
-api_router.register(r"plans", api_views.PlanViewSet, basename="plan")
+api_router.register(r"plans", api_views.PlanTemplateViewSet, basename="plan")
 api_router.register(
     r"subscriptions", api_views.SubscriptionViewSet, basename="subscription"
 )
@@ -259,5 +259,6 @@ if PROFILER_ENABLED:
     urlpatterns += [path("silk/", include("silk.urls", namespace="silk"))]
 
 if DEBUG:
+    urlpatterns += [re_path(".*", TemplateView.as_view(template_name="index.html"))]
     urlpatterns += [re_path(".*", TemplateView.as_view(template_name="index.html"))]
     urlpatterns += [re_path(".*", TemplateView.as_view(template_name="index.html"))]

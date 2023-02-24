@@ -1909,13 +1909,15 @@ class PlanVersion(models.Model):
     usage_billing_frequency = models.CharField(
         max_length=40, choices=USAGE_BILLING_FREQUENCY.choices, null=True, blank=True
     )
-    plan = models.ForeignKey("Plan", on_delete=models.CASCADE, related_name="versions")
+    plan = models.ForeignKey(
+        "PlanTemplate", on_delete=models.CASCADE, related_name="versions"
+    )
     status = models.CharField(max_length=40, choices=PLAN_VERSION_STATUS.choices)
     replace_with = models.ForeignKey(
         "self", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
     )
     transition_to = models.ForeignKey(
-        "Plan",
+        "PlanTemplate",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -2056,11 +2058,11 @@ class AddOnSpecification(models.Model):
     )
 
 
-class Plan(models.Model):
+class PlanTemplate(models.Model):
     organization = models.ForeignKey(
         Organization, on_delete=models.CASCADE, related_name="plans"
     )
-    plan_name = models.CharField(max_length=100, help_text="Name of the plan")
+    plan_name = models.TextField()
     plan_duration = models.CharField(
         choices=PLAN_DURATION.choices,
         max_length=40,
@@ -2120,8 +2122,6 @@ class Plan(models.Model):
 
     objects = BasePlanManager()
     addons = AddOnPlanManager()
-
-    history = HistoricalRecords()
 
     def save(self, *args, **kwargs):
         if not self.pk and self.target_customer:
@@ -2273,7 +2273,7 @@ class ExternalPlanLink(models.Model):
         related_name="external_plan_links",
     )
     plan = models.ForeignKey(
-        Plan, on_delete=models.CASCADE, related_name="external_links"
+        PlanTemplate, on_delete=models.CASCADE, related_name="external_links"
     )
     source = models.CharField(choices=PAYMENT_PROCESSORS.choices, max_length=40)
     external_plan_id = models.CharField(max_length=100)
@@ -2483,7 +2483,7 @@ class SubscriptionRecord(models.Model):
                 old_filters = subscription.filters_lst
                 if CategoricalFilter.overlaps(old_filters, new_filters):
                     raise OverlappingPlans(
-                        f"Overlapping subscriptions with the same filters are not allowed. \n Plan: {self.billing_plan} \n Customer: {self.customer}. \n New dates: ({self.start_date, self.end_date}) \n New subscription_filters: {new_filters} \n Old dates: ({self.start_date, self.end_date}) \n Old subscription_filters: {list(old_filters)}"
+                        f"Overlapping subscriptions with the same filters are not allowed. \n PlanTemplate: {self.billing_plan} \n Customer: {self.customer}. \n New dates: ({self.start_date, self.end_date}) \n New subscription_filters: {new_filters} \n Old dates: ({self.start_date, self.end_date}) \n Old subscription_filters: {list(old_filters)}"
                     )
         super(SubscriptionRecord, self).save(*args, **kwargs)
         for filter in new_filters:

@@ -30,7 +30,7 @@ from metering_billing.models import (
     Metric,
     Organization,
     OrganizationSetting,
-    Plan,
+    PlanTemplate,
     PlanVersion,
     PricingUnit,
     Product,
@@ -69,7 +69,7 @@ from metering_billing.serializers.model_serializers import (
     OrganizationSettingUpdateSerializer,
     OrganizationUpdateSerializer,
     PlanCreateSerializer,
-    PlanDetailSerializer,
+    PlanTemplateDetailSerializer,
     PlanUpdateSerializer,
     PlanVersionCreateSerializer,
     PlanVersionDetailSerializer,
@@ -89,7 +89,7 @@ from metering_billing.serializers.serializer_utils import (
     MetricUUIDField,
     OrganizationSettingUUIDField,
     OrganizationUUIDField,
-    PlanUUIDField,
+    PlanTemplateUUIDField,
     PlanVersionUUIDField,
     UsageAlertUUIDField,
     WebhookEndpointUUIDField,
@@ -760,12 +760,12 @@ class PlanVersionViewSet(PermissionPolicyMixin, viewsets.ModelViewSet):
         return instance
 
 
-class PlanViewSet(api_views.PlanViewSet):
+class PlanTemplateViewSet(api_views.PlanTemplateViewSet):
     """
     ViewSet for viewing and editing Plans.
     """
 
-    serializer_class = PlanDetailSerializer
+    serializer_class = PlanTemplateDetailSerializer
     lookup_field = "plan_id"
     http_method_names = ["get", "post", "patch", "head"]
     permission_classes_per_method = {
@@ -776,7 +776,7 @@ class PlanViewSet(api_views.PlanViewSet):
     def get_object(self):
         string_uuid = self.kwargs[self.lookup_field]
         if "plan_" in string_uuid:
-            uuid = PlanUUIDField().to_internal_value(string_uuid)
+            uuid = PlanTemplateUUIDField().to_internal_value(string_uuid)
         else:
             uuid = AddonUUIDField().to_internal_value(string_uuid)
         self.kwargs[self.lookup_field] = uuid
@@ -800,17 +800,17 @@ class PlanViewSet(api_views.PlanViewSet):
             return PlanUpdateSerializer
         elif self.action == "create":
             return PlanCreateSerializer
-        return PlanDetailSerializer
+        return PlanTemplateDetailSerializer
 
-    @extend_schema(responses=PlanDetailSerializer)
+    @extend_schema(responses=PlanTemplateDetailSerializer)
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         instance = self.perform_create(serializer)
-        metric_data = PlanDetailSerializer(instance).data
+        metric_data = PlanTemplateDetailSerializer(instance).data
         return Response(metric_data, status=status.HTTP_201_CREATED)
 
-    @extend_schema(responses=PlanDetailSerializer)
+    @extend_schema(responses=PlanTemplateDetailSerializer)
     def update(self, request, *args, **kwargs):
         plan = self.get_object()
         serializer = self.get_serializer(plan, data=request.data, partial=True)
@@ -822,7 +822,9 @@ class PlanViewSet(api_views.PlanViewSet):
             plan._prefetched_objects_cache = {}
 
         return Response(
-            PlanDetailSerializer(plan, context=self.get_serializer_context()).data,
+            PlanTemplateDetailSerializer(
+                plan, context=self.get_serializer_context()
+            ).data,
             status=status.HTTP_200_OK,
         )
 
@@ -1228,7 +1230,7 @@ class AddOnViewSet(viewsets.ModelViewSet):
     http_method_names = ["get", "head", "post"]
     lookup_field = "plan_id"
     lookup_url_kwarg = "addon_id"
-    queryset = Plan.addons.all()
+    queryset = PlanTemplate.addons.all()
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
@@ -1304,6 +1306,7 @@ class UsageAlertViewSet(viewsets.ModelViewSet):
         context = super().get_serializer_context()
         organization = self.request.organization
         context.update({"organization": organization})
+        return context
         return context
         return context
         return context

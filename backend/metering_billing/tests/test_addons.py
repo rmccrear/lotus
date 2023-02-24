@@ -7,10 +7,6 @@ from decimal import Decimal
 import pytest
 from dateutil import parser
 from django.urls import reverse
-from model_bakery import baker
-from rest_framework import status
-from rest_framework.test import APIClient
-
 from metering_billing.aggregation.billable_metrics import METRIC_HANDLER_MAP
 from metering_billing.invoice import generate_invoice
 from metering_billing.models import (
@@ -19,7 +15,6 @@ from metering_billing.models import (
     Feature,
     Invoice,
     Metric,
-    Plan,
     PlanComponent,
     PlanVersion,
     PriceTier,
@@ -29,6 +24,9 @@ from metering_billing.models import (
 from metering_billing.serializers.serializer_utils import DjangoJSONEncoder
 from metering_billing.utils import now_utc
 from metering_billing.utils.enums import PLAN_VERSION_STATUS
+from model_bakery import baker
+from rest_framework import status
+from rest_framework.test import APIClient
 
 
 @pytest.fixture
@@ -150,7 +148,7 @@ def addon_test_common_setup(
             billing_frequency=AddOnSpecification.BillingFrequency.ONE_TIME,
             flat_fee_invoicing_behavior_on_attach=AddOnSpecification.FlatFeeInvoicingBehaviorOnAttach.INVOICE_ON_ATTACH,
         )
-        flat_fee_addon = Plan.objects.create(
+        flat_fee_addon = PlanTemplate.objects.create(
             organization=org, plan_name="flat_fee_addon", addon_spec=flat_fee_addon_spec
         )
         flat_fee_addon_version = PlanVersion.objects.create(
@@ -186,7 +184,7 @@ def addon_test_common_setup(
             billing_frequency=AddOnSpecification.BillingFrequency.RECURRING,
             flat_fee_invoicing_behavior_on_attach=AddOnSpecification.FlatFeeInvoicingBehaviorOnAttach.INVOICE_ON_ATTACH,
         )
-        recurring_addon = Plan.objects.create(
+        recurring_addon = PlanTemplate.objects.create(
             organization=org,
             plan_name="recurring_addon",
             addon_spec=recurring_addon_spec,

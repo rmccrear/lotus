@@ -14,8 +14,8 @@ from .models import (
     Invoice,
     Metric,
     Organization,
-    Plan,
     PlanComponent,
+    PlanTemplate,
     PlanVersion,
     SubscriptionRecord,
     TeamInviteToken,
@@ -35,7 +35,7 @@ admin.site.register(User, CustomAdmin)
 admin.site.register(Customer, SimpleHistoryAdmin)
 admin.site.register(Event)
 admin.site.register(SubscriptionRecord)
-admin.site.register(Plan, SimpleHistoryAdmin)
+admin.site.register(PlanTemplate, SimpleHistoryAdmin)
 admin.site.register(Backtest)
 admin.site.register(Metric, SimpleHistoryAdmin)
 admin.site.register(PlanComponent)

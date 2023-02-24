@@ -19,8 +19,8 @@ from metering_billing.models import (
     Metric,
     Organization,
     OrganizationSetting,
-    Plan,
     PlanComponent,
+    PlanTemplate,
     PlanVersion,
     PriceAdjustment,
     PriceTier,
@@ -38,7 +38,7 @@ from metering_billing.models import (
 from metering_billing.serializers.serializer_utils import (
     OrganizationSettingUUIDField,
     OrganizationUUIDField,
-    PlanUUIDField,
+    PlanTemplateUUIDField,
     PlanVersionUUIDField,
     SlugRelatedFieldWithOrganization,
     TimezoneFieldMixin,
@@ -777,7 +777,7 @@ class MetricUpdateSerializer(TimezoneFieldMixin, serializers.ModelSerializer):
             all_active_plan_versions = PlanVersion.objects.filter(
                 ~Q(status=PLAN_VERSION_STATUS.ARCHIVED),
                 organization=self.context["organization"],
-                plan__in=Plan.objects.filter(
+                plan__in=PlanTemplate.objects.filter(
                     organization=self.context["organization"], status=PLAN_STATUS.ACTIVE
                 ),
             ).prefetch_related("plan_components", "plan_components__billable_metric")
@@ -880,7 +880,7 @@ class ExternalPlanLinkSerializer(TimezoneFieldMixin, serializers.ModelSerializer
     plan_id = SlugRelatedFieldWithOrganization(
         slug_field="plan_id",
         source="plan",
-        queryset=Plan.objects.all(),
+        queryset=PlanTemplate.objects.all(),
         write_only=True,
     )
 
@@ -1061,7 +1061,7 @@ class PlanVersionUpdateSerializer(TimezoneFieldMixin, serializers.ModelSerialize
     )
     transition_to_plan_id = SlugRelatedFieldWithOrganization(
         slug_field="plan_id",
-        queryset=Plan.objects.all(),
+        queryset=PlanTemplate.objects.all(),
         write_only=True,
         required=False,
         source="transition_to",
@@ -1246,7 +1246,7 @@ class PlanVersionCreateSerializer(TimezoneFieldMixin, serializers.ModelSerialize
     price_adjustment = PriceAdjustmentSerializer(required=False)
     plan_id = SlugRelatedFieldWithOrganization(
         slug_field="plan_id",
-        queryset=Plan.objects.all(),
+        queryset=PlanTemplate.objects.all(),
         source="plan",
         required=False,
     )
@@ -1261,7 +1261,7 @@ class PlanVersionCreateSerializer(TimezoneFieldMixin, serializers.ModelSerialize
     )
     transition_to_plan_id = SlugRelatedFieldWithOrganization(
         slug_field="plan_id",
-        queryset=Plan.objects.all(),
+        queryset=PlanTemplate.objects.all(),
         required=False,
     )
     currency_code = SlugRelatedFieldWithOrganization(
@@ -1388,7 +1388,7 @@ class PlanVersionDetailSerializer(api_serializers.PlanVersionSerializer):
         )
         extra_kwargs = {**api_serializers.PlanVersionSerializer.Meta.extra_kwargs}
 
-    plan_id = PlanUUIDField(source="plan.plan_id", read_only=True)
+    plan_id = PlanTemplateUUIDField(source="plan.plan_id", read_only=True)
     alerts = serializers.SerializerMethodField()
     version_id = PlanVersionUUIDField(read_only=True)
     active_subscriptions = serializers.SerializerMethodField()
@@ -1430,9 +1430,9 @@ class LightweightCustomerSerializer(api_serializers.LightweightCustomerSerialize
         fields = api_serializers.LightweightCustomerSerializer.Meta.fields
 
 
-class PlanDetailSerializer(api_serializers.PlanSerializer):
-    class Meta(api_serializers.PlanSerializer.Meta):
-        fields = api_serializers.PlanSerializer.Meta.fields + (
+class PlanTemplateDetailSerializer(api_serializers.PlanTemplateSerializer):
+    class Meta(api_serializers.PlanTemplateSerializer.Meta):
+        fields = api_serializers.PlanTemplateSerializer.Meta.fields + (
             "versions",
             "taxjar_code",
         )
@@ -1462,7 +1462,7 @@ class PlanDetailSerializer(api_serializers.PlanSerializer):
 
 class PlanCreateSerializer(TimezoneFieldMixin, serializers.ModelSerializer):
     class Meta:
-        model = Plan
+        model = PlanTemplate
         fields = (
             "plan_name",
             "plan_duration",
@@ -1487,7 +1487,7 @@ class PlanCreateSerializer(TimezoneFieldMixin, serializers.ModelSerializer):
     initial_version = InitialPlanVersionSerializer()
     parent_plan_id = SlugRelatedFieldWithOrganization(
         slug_field="plan_id",
-        queryset=Plan.objects.all(),
+        queryset=PlanTemplate.objects.all(),
         source="parent_plan",
         required=False,
     )
@@ -1543,7 +1543,7 @@ class PlanCreateSerializer(TimezoneFieldMixin, serializers.ModelSerializer):
             display_version_data.pop("transition_to_plan_id")
         if tags:
             validated_data.pop("tags")
-        plan = Plan.objects.create(**validated_data)
+        plan = PlanTemplate.objects.create(**validated_data)
         try:
             display_version_data["status"] = PLAN_VERSION_STATUS.ACTIVE
             display_version_data["plan"] = plan
@@ -1595,7 +1595,7 @@ class PlanCreateSerializer(TimezoneFieldMixin, serializers.ModelSerializer):
 
 class PlanUpdateSerializer(TimezoneFieldMixin, serializers.ModelSerializer):
     class Meta:
-        model = Plan
+        model = PlanTemplate
         fields = (
             "plan_name",
             "status",
@@ -1759,10 +1759,13 @@ class PlanVersionActionSerializer(PlanVersionDetailSerializer):
         return "Plan Version"
 
 
-class PlanActionSerializer(PlanDetailSerializer):
-    class Meta(PlanDetailSerializer.Meta):
-        model = Plan
-        fields = PlanDetailSerializer.Meta.fields + ("string_repr", "object_type")
+class PlanActionSerializer(PlanTemplateDetailSerializer):
+    class Meta(PlanTemplateDetailSerializer.Meta):
+        model = PlanTemplate
+        fields = PlanTemplateDetailSerializer.Meta.fields + (
+            "string_repr",
+            "object_type",
+        )
 
     string_repr = serializers.SerializerMethodField()
     object_type = serializers.SerializerMethodField()
@@ -1771,7 +1774,7 @@ class PlanActionSerializer(PlanDetailSerializer):
         return obj.plan_name
 
     def get_object_type(self, obj):
-        return "Plan"
+        return "PlanTemplate"
 
 
 class MetricActionSerializer(MetricDetailSerializer):
@@ -1825,7 +1828,7 @@ class CustomerActionSerializer(CustomerSerializer):
 GFK_MODEL_SERIALIZER_MAPPING = {
     User: UserActionSerializer,
     PlanVersion: PlanVersionActionSerializer,
-    Plan: PlanActionSerializer,
+    PlanTemplate: PlanActionSerializer,
     SubscriptionRecord: SubscriptionActionSerializer,
     Metric: MetricActionSerializer,
     Customer: CustomerActionSerializer,
@@ -2003,7 +2006,7 @@ class AddOnSerializer(api_serializers.AddOnSerializer):
 
 class AddOnCreateSerializer(TimezoneFieldMixin, serializers.ModelSerializer):
     class Meta:
-        model = Plan
+        model = PlanTemplate
         fields = (
             "addon_name",
             "description",
@@ -2135,7 +2138,7 @@ class AddOnCreateSerializer(TimezoneFieldMixin, serializers.ModelSerializer):
             "created_on": now,
             "addon_spec": addon_spec,
         }
-        plan = Plan.addons.create(**plan_create_data)
+        plan = PlanTemplate.addons.create(**plan_create_data)
 
         # create the plan version
         plan_version_data = {
@@ -2222,6 +2225,7 @@ class UsageAlertCreateSerializer(TimezoneFieldMixin, serializers.ModelSerializer
             plan_version=plan_version,
             **validated_data,
         )
+        return usage_alert
         return usage_alert
         return usage_alert
         return usage_alert

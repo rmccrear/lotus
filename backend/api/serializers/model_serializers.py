@@ -25,8 +25,8 @@ from metering_billing.models import (
     Metric,
     NumericFilter,
     Organization,
-    Plan,
     PlanComponent,
+    PlanTemplate,
     PlanVersion,
     PriceAdjustment,
     PriceTier,
@@ -44,7 +44,7 @@ from metering_billing.serializers.serializer_utils import (
     FeatureUUIDField,
     InvoiceUUIDField,
     MetricUUIDField,
-    PlanUUIDField,
+    PlanTemplateUUIDField,
     PlanVersionUUIDField,
     SlugRelatedFieldWithOrganization,
     TimezoneFieldMixin,
@@ -160,7 +160,7 @@ class LightweightPlanVersionSerializer(
         }
 
     plan_name = serializers.CharField(source="plan.plan_name")
-    plan_id = PlanUUIDField(source="plan.plan_id")
+    plan_id = PlanTemplateUUIDField(source="plan.plan_id")
     version_id = PlanVersionUUIDField(read_only=True)
 
 
@@ -227,7 +227,7 @@ class SubscriptionCustomerDetailSerializer(SubscriptionCustomerSummarySerializer
 
 class LightweightAddonSerializer(TimezoneFieldMixin, serializers.ModelSerializer):
     class Meta:
-        model = Plan
+        model = PlanTemplate
         fields = ("addon_name", "addon_id", "addon_type", "billing_frequency")
         extra_kwargs = {
             "addon_name": {"required": True},
@@ -1176,7 +1176,7 @@ class PlanNameAndIDSerializer(
     ConvertEmptyStringToNullMixin, TimezoneFieldMixin, serializers.ModelSerializer
 ):
     class Meta:
-        model = Plan
+        model = PlanTemplate
         fields = (
             "plan_name",
             "plan_id",
@@ -1186,7 +1186,7 @@ class PlanNameAndIDSerializer(
             "plan_id": {"required": True},
         }
 
-    plan_id = PlanUUIDField()
+    plan_id = PlanTemplateUUIDField()
 
 
 class InvoiceUpdateSerializer(
@@ -1233,11 +1233,11 @@ class InitialExternalPlanLinkSerializer(
         fields = ("source", "external_plan_id")
 
 
-class PlanSerializer(
+class PlanTemplateSerializer(
     ConvertEmptyStringToNullMixin, TimezoneFieldMixin, serializers.ModelSerializer
 ):
     class Meta:
-        model = Plan
+        model = PlanTemplate
         fields = (
             "plan_name",
             "plan_duration",
@@ -1265,7 +1265,7 @@ class PlanSerializer(
             "tags": {"required": True},
         }
 
-    plan_id = PlanUUIDField()
+    plan_id = PlanTemplateUUIDField()
     parent_plan = PlanNameAndIDSerializer(allow_null=True)
     target_customer = LightweightCustomerSerializer(allow_null=True)
     display_version = PlanVersionSerializer()
@@ -1285,7 +1285,7 @@ class PlanSerializer(
             return len(obj.versions_prefetched)
         except AttributeError:
             logger.error(
-                "PlanSerializer.get_num_versions() called without prefetching 'versions_prefetched'"
+                "PlanTemplateSerializer.get_num_versions() called without prefetching 'versions_prefetched'"
             )
             return obj.versions.all().count()
 
@@ -1294,7 +1294,7 @@ class PlanSerializer(
             return sum(x.active_subscriptions for x in obj.versions_prefetched)
         except AttributeError:
             logger.error(
-                "PlanSerializer.get_active_subscriptions() called without prefetching 'versions_prefetched'"
+                "PlanTemplateSerializer.get_active_subscriptions() called without prefetching 'versions_prefetched'"
             )
             return (
                 obj.active_subs_by_version().aggregate(res=Sum("active_subscriptions"))[
@@ -1373,7 +1373,7 @@ class SubscriptionRecordCreateSerializer(
     plan_id = SlugRelatedFieldWithOrganization(
         slug_field="plan_id",
         source="billing_plan.plan",
-        queryset=Plan.objects.all(),
+        queryset=PlanTemplate.objects.all(),
         write_only=True,
         help_text="The Lotus plan_id, found in the billing plan object",
     )
@@ -1470,7 +1470,7 @@ class SubscriptionRecordUpdateSerializer(
         slug_field="plan_id",
         read_only=False,
         source="billing_plan.plan",
-        queryset=Plan.objects.all(),
+        queryset=PlanTemplate.objects.all(),
         write_only=True,
         required=False,
         help_text="If provided, will replace the current subscription's plan with this plan. If this is provided,turn_off_auto_renew and end_date will be ignored. The provided plan must have the same duration as the current plan.",
@@ -1531,7 +1531,7 @@ class AddonSubscriptionRecordUpdateSerializer(
     )
 
 
-class ListPlansFilterSerializer(serializers.Serializer):
+class ListPlanTemplatesFilterSerializer(serializers.Serializer):
     include_tags = serializers.ListField(
         child=serializers.CharField(),
         required=False,
@@ -1560,7 +1560,7 @@ class SubscriptionRecordFilterSerializer(serializers.Serializer):
     plan_id = SlugRelatedFieldWithOrganization(
         slug_field="plan_id",
         source="billing_plan.plan",
-        queryset=Plan.objects.filter(addon_spec__isnull=True),
+        queryset=PlanTemplate.objects.filter(addon_spec__isnull=True),
         required=True,
         help_text="Filter to a specific plan.",
     )
@@ -1581,7 +1581,7 @@ class SubscriptionRecordFilterSerializerDelete(SubscriptionRecordFilterSerialize
     plan_id = SlugRelatedFieldWithOrganization(
         slug_field="plan_id",
         source="billing_plan.plan",
-        queryset=Plan.objects.filter(addon_spec__isnull=True),
+        queryset=PlanTemplate.objects.filter(addon_spec__isnull=True),
         required=False,
         help_text="Filter to a specific plan. If not specified, all plans will be included in the cancellation request.",
     )
@@ -1617,7 +1617,7 @@ class ListSubscriptionRecordFilter(SubscriptionRecordFilterSerializer):
     plan_id = SlugRelatedFieldWithOrganization(
         slug_field="plan_id",
         source="billing_plan.plan",
-        queryset=Plan.objects.filter(addon_spec__isnull=True),
+        queryset=PlanTemplate.objects.filter(addon_spec__isnull=True),
         required=False,
         help_text="Filter to a specific plan.",
     )
@@ -1645,7 +1645,7 @@ class AddonSubscriptionRecordFilterSerializer(serializers.Serializer):
     )
     attached_plan_id = SlugRelatedFieldWithOrganization(
         slug_field="plan_id",
-        queryset=Plan.objects.filter(addon_spec__isnull=True),
+        queryset=PlanTemplate.objects.filter(addon_spec__isnull=True),
         required=True,
         help_text="Filter to a specific plan.",
     )
@@ -1656,7 +1656,7 @@ class AddonSubscriptionRecordFilterSerializer(serializers.Serializer):
     )
     addon_id = SlugRelatedFieldWithOrganization(
         slug_field="plan_id",
-        queryset=Plan.addons.all(),
+        queryset=PlanTemplate.addons.all(),
         required=True,
         help_text="Filter to a specific addon.",
     )
@@ -1929,7 +1929,7 @@ class UsageAlertSerializer(TimezoneFieldMixin, serializers.ModelSerializer):
 
 class AddOnSerializer(TimezoneFieldMixin, serializers.ModelSerializer):
     class Meta:
-        model = Plan
+        model = PlanTemplate
         fields = (
             "addon_name",
             "addon_id",
@@ -2068,7 +2068,7 @@ class AddOnSubscriptionRecordCreateSerializer(
     )
     attach_to_plan_id = SlugRelatedFieldWithOrganization(
         slug_field="plan_id",
-        queryset=Plan.objects.all(),
+        queryset=PlanTemplate.objects.all(),
         required=True,
         help_text="The add-on will be applied to the subscription with this plan ID.",
     )
@@ -2079,7 +2079,7 @@ class AddOnSubscriptionRecordCreateSerializer(
     )
     addon_id = SlugRelatedFieldWithOrganization(
         slug_field="plan_id",
-        queryset=Plan.addons.all(),
+        queryset=PlanTemplate.addons.all(),
         required=True,
         help_text="The add-on to be applied to the subscription.",
     )
@@ -2184,6 +2184,7 @@ class AddOnSubscriptionRecordCreateSerializer(
             sr.filters.add(sf)
         if invoice_now:
             generate_invoice(sr)
+        return sr
         return sr
         return sr
         return sr

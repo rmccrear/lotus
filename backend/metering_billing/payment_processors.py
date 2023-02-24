@@ -1209,7 +1209,6 @@ class StripeConnector(PaymentProcesor):
             Customer,
             ExternalPlanLink,
             Organization,
-            Plan,
             SubscriptionRecord,
         )
 
@@ -1228,7 +1227,9 @@ class StripeConnector(PaymentProcesor):
             query="status:'active'", **stripe_cust_kwargs
         )
         plans_with_links = (
-            Plan.objects.filter(organization=organization, status=PLAN_STATUS.ACTIVE)
+            PlanTemplate.objects.filter(
+                organization=organization, status=PLAN_STATUS.ACTIVE
+            )
             .prefetch_related(
                 Prefetch(
                     "external_links",
@@ -1272,7 +1273,7 @@ class StripeConnector(PaymentProcesor):
                 continue
             # great, in this case we transfer the subscription
             elif len(matching_plans) == 1:
-                billing_plan = Plan.objects.get(id=matching_plans[0][0])
+                billing_plan = PlanTemplate.objects.get(id=matching_plans[0][0])
                 # check to see if subscription exists
                 validated_data = {
                     "organization": organization,

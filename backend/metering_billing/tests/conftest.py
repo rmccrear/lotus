@@ -257,11 +257,9 @@ def add_product_to_org():
 
 @pytest.fixture
 def add_plan_to_product():
-    from metering_billing.models import Plan
-
     def do_add_plan_to_product(product):
         (plan,) = baker.make(
-            Plan,
+            PlanTemplate,
             organization=product.organization,
             plan_name="test-plan",
             parent_product=product,

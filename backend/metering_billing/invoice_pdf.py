@@ -7,7 +7,7 @@ import boto3
 from botocore.exceptions import ClientError
 from django.conf import settings
 from django.forms.models import model_to_dict
-from metering_billing.serializers.serializer_utils import PlanUUIDField
+from metering_billing.serializers.serializer_utils import PlanTemplateUUIDField
 from metering_billing.utils import make_hashable
 from metering_billing.utils.enums import CHARGEABLE_ITEM_TYPE
 from reportlab.lib.colors import Color, HexColor
@@ -356,7 +356,7 @@ class InvoicePDF:
             sub_record = line_item.associated_subscription_record
             if sub_record is not None:
                 plan_name = sub_record.billing_plan.plan.plan_name
-                plan_id = PlanUUIDField().to_representation(
+                plan_id = PlanTemplateUUIDField().to_representation(
                     sub_record.billing_plan.plan.plan_id
                 )
                 sub_filters = list(sub_record.get_filters_dictionary().items())

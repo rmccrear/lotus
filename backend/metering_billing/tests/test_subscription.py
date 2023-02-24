@@ -10,7 +10,6 @@ from metering_billing.models import (
     Event,
     Invoice,
     Metric,
-    Plan,
     PlanComponent,
     PlanVersion,
     PriceTier,
@@ -424,7 +423,7 @@ class TestUpdateSub:
             _quantity=20,
         )
 
-        new_plan = Plan.objects.create(
+        new_plan = PlanTemplate.objects.create(
             organization=setup_dict["org"],
             plan_name="yearly plan",
             plan_duration=PLAN_DURATION.YEARLY,
@@ -496,7 +495,7 @@ class TestUpdateSub:
             _quantity=20,
         )
 
-        new_plan = Plan.objects.create(
+        new_plan = PlanTemplate.objects.create(
             organization=setup_dict["org"],
             plan_name="yearly plan",
             plan_duration=PLAN_DURATION.MONTHLY,
@@ -576,7 +575,7 @@ class TestUpdateSub:
             _quantity=20,
         )
 
-        new_plan = Plan.objects.create(
+        new_plan = PlanTemplate.objects.create(
             organization=setup_dict["org"],
             plan_name="yearly plan",
             plan_duration=PLAN_DURATION.MONTHLY,

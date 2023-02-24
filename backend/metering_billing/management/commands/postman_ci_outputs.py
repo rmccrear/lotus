@@ -11,7 +11,6 @@ from metering_billing.models import (
     CustomerBalanceAdjustment,
     Feature,
     Organization,
-    Plan,
     PlanVersion,
     RecurringCharge,
 )
@@ -113,7 +112,7 @@ class Command(BaseCommand):
         num_seats = metrics_map["num_seats"]
         metrics_map["compute_cost"]
         # SET THE BILLING PLANS
-        plan = Plan.objects.create(
+        plan = PlanTemplate.objects.create(
             plan_name="Free Plan",
             organization=organization,
             plan_duration=PLAN_DURATION.MONTHLY,
@@ -185,7 +184,7 @@ class Command(BaseCommand):
             billing_frequency=AddOnSpecification.BillingFrequency.ONE_TIME,
             flat_fee_invoicing_behavior_on_attach=AddOnSpecification.FlatFeeInvoicingBehaviorOnAttach.INVOICE_ON_ATTACH,
         )
-        flat_fee_addon = Plan.objects.create(
+        flat_fee_addon = PlanTemplate.objects.create(
             organization=organization,
             plan_name="flat_fee_addon",
             addon_spec=flat_fee_addon_spec,

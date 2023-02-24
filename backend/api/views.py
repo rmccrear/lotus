@@ -28,9 +28,9 @@ from api.serializers.model_serializers import (
     InvoiceListFilterSerializer,
     InvoiceSerializer,
     InvoiceUpdateSerializer,
-    ListPlansFilterSerializer,
+    ListPlanTemplatesFilterSerializer,
     ListSubscriptionRecordFilter,
-    PlanSerializer,
+    PlanTemplateSerializer,
     SubscriptionRecordCancelSerializer,
     SubscriptionRecordCreateSerializer,
     SubscriptionRecordFilterSerializer,
@@ -79,9 +79,11 @@ from metering_billing.exceptions import (
     RepeatedOperation,
     ServerError,
     SwitchPlanDurationMismatch,
+)
+from metering_billing.exceptions.exceptions import (
+    NotFoundException,
     SwitchPlanSamePlanException,
 )
-from metering_billing.exceptions.exceptions import NotFoundException
 from metering_billing.invoice import generate_invoice
 from metering_billing.invoice_pdf import get_invoice_presigned_url
 from metering_billing.kafka.producer import Producer
@@ -93,8 +95,8 @@ from metering_billing.models import (
     Invoice,
     InvoiceLineItem,
     Metric,
-    Plan,
     PlanComponent,
+    PlanTemplate,
     PriceTier,
     RecurringCharge,
     SubscriptionRecord,
@@ -107,7 +109,7 @@ from metering_billing.serializers.serializer_utils import (
     InvoiceUUIDField,
     MetricUUIDField,
     OrganizationUUIDField,
-    PlanUUIDField,
+    PlanTemplateUUIDField,
 )
 from metering_billing.utils import (
     calculate_end_date,
@@ -435,18 +437,18 @@ class CustomerViewSet(PermissionPolicyMixin, viewsets.ModelViewSet):
         return response
 
 
-class PlanViewSet(PermissionPolicyMixin, viewsets.ModelViewSet):
-    serializer_class = PlanSerializer
+class PlanTemplateViewSet(PermissionPolicyMixin, viewsets.ModelViewSet):
+    serializer_class = PlanTemplateSerializer
     lookup_field = "plan_id"
     http_method_names = ["get", "head"]
-    queryset = Plan.objects.all().order_by(
+    queryset = PlanTemplate.objects.all().order_by(
         F("created_on").desc(nulls_last=False), F("plan_name")
     )
 
     def get_object(self):
         string_uuid = str(self.kwargs[self.lookup_field])
         if "plan_" in string_uuid:
-            uuid = PlanUUIDField().to_internal_value(string_uuid)
+            uuid = PlanTemplateUUIDField().to_internal_value(string_uuid)
         else:
             uuid = AddonUUIDField().to_internal_value(string_uuid)
         self.kwargs[self.lookup_field] = uuid
@@ -458,7 +460,7 @@ class PlanViewSet(PermissionPolicyMixin, viewsets.ModelViewSet):
         now = now_utc()
         organization = self.request.organization
         qs = (
-            Plan.objects.all()
+            PlanTemplate.objects.all()
             .order_by(F("created_on").desc(nulls_last=False), F("plan_name"))
             .filter(organization=organization, status=PLAN_STATUS.ACTIVE)
         )
@@ -545,7 +547,7 @@ class PlanViewSet(PermissionPolicyMixin, viewsets.ModelViewSet):
             ),
         )
 
-        plan_filter_serializer = ListPlansFilterSerializer(
+        plan_filter_serializer = ListPlanTemplatesFilterSerializer(
             data=self.request.query_params
         )
 
@@ -611,7 +613,7 @@ class PlanViewSet(PermissionPolicyMixin, viewsets.ModelViewSet):
         return context
 
     @extend_schema(
-        parameters=[ListPlansFilterSerializer],
+        parameters=[ListPlanTemplatesFilterSerializer],
     )
     def list(self, request, *args, **kwargs):
         return super().list(request)
@@ -1996,7 +1998,7 @@ class GetCustomerFeatureAccessView(APIView):
                 )
             sub_dict = {
                 "feature_name": feature_name,
-                "plan_id": PlanUUIDField().to_representation(
+                "plan_id": PlanTemplateUUIDField().to_representation(
                     sub.billing_plan.plan.plan_id
                 ),
                 "subscription_filters": subscription_filters,
@@ -2080,7 +2082,7 @@ class GetCustomerEventAccessView(APIView):
                     }
                 )
             single_sub_dict = {
-                "plan_id": PlanUUIDField().to_representation(
+                "plan_id": PlanTemplateUUIDField().to_representation(
                     sr.billing_plan.plan.plan_id
                 ),
                 "subscription_filters": subscription_filters,

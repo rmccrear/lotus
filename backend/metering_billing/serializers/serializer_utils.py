@@ -111,7 +111,7 @@ class SlugRelatedFieldWithOrganization(serializers.SlugRelatedField):
             Invoice,
             Metric,
             Organization,
-            Plan,
+            PlanTemplate,
             PlanVersion,
         )
 
@@ -119,9 +119,9 @@ class SlugRelatedFieldWithOrganization(serializers.SlugRelatedField):
             data = BalanceAdjustmentUUIDField().to_internal_value(data)
         elif self.queryset.model is Metric:
             data = MetricUUIDField().to_internal_value(data)
-        elif self.queryset.model is Plan:
+        elif self.queryset.model is PlanTemplate:
             try:
-                data = PlanUUIDField().to_internal_value(data)
+                data = PlanTemplateUUIDField().to_internal_value(data)
             except ValidationError:
                 data = AddonUUIDField().to_internal_value(data)
         elif self.queryset.model is PlanVersion:
@@ -141,7 +141,7 @@ class SlugRelatedFieldWithOrganization(serializers.SlugRelatedField):
             Invoice,
             Metric,
             Organization,
-            Plan,
+            PlanTemplate,
             PlanVersion,
         )
 
@@ -150,9 +150,9 @@ class SlugRelatedFieldWithOrganization(serializers.SlugRelatedField):
             return BalanceAdjustmentUUIDField().to_representation(obj.adjustment_id)
         elif isinstance(obj, Metric):
             return MetricUUIDField().to_representation(obj.metric_id)
-        elif isinstance(obj, Plan) and obj.addon_spec is None:
-            return PlanUUIDField().to_representation(obj.plan_id)
-        elif isinstance(obj, Plan) and obj.addon_spec is not None:
+        elif isinstance(obj, PlanTemplate) and obj.addon_spec is None:
+            return PlanTemplateUUIDField().to_representation(obj.plan_id)
+        elif isinstance(obj, PlanTemplate) and obj.addon_spec is not None:
             return AddonUUIDField().to_representation(obj.plan_id)
         elif isinstance(obj, PlanVersion):
             return PlanVersionUUIDField().to_representation(obj.version_id)
@@ -242,7 +242,7 @@ class OrganizationSettingUUIDField(UUIDPrefixField):
 
 
 @extend_schema_field(serializers.RegexField(regex=r"plan_[0-9a-f]{32}"))
-class PlanUUIDField(UUIDPrefixField):
+class PlanTemplateUUIDField(UUIDPrefixField):
     def __init__(self, *args, **kwargs):
         super().__init__("plan_", *args, **kwargs)
 
