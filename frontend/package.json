@@ -8,7 +8,7 @@
     "preview": "vite preview",
     "dev": "vite",
     "start": "vite",
-    "start-dev-server": "cd ../backend && pipenv run python manage.py runserver 0.0.0.0:8000 & cd ../frontend && yarn run dev --port 3000 &",
+    "start-dev-server": "pwd && cd ../backend && pipenv run python manage.py runserver 0.0.0.0:8000 & pwd && cd ../frontend && pwd && yarn run dev --port 3000 &",
     "lint": "eslint . --ext .ts,.tsx",
     "pretty": "prettier --write ."
   },
