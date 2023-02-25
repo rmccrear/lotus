@@ -122,5 +122,5 @@ jobs:
         uses: cypress-io/github-action@v5
         with:
           working-directory: ./frontend
-          start: cd .. && cd ./backend && pipenv run python manage.py runserver 0.0.0.0:8000 & cd ./frontend && yarn run dev --port 3000
+          start: yarn run start-dev-server
           wait-on: "http://localhost:3000/login"
