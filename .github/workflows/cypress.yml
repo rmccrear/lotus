@@ -85,14 +85,15 @@ jobs:
         run: |
           cd ./backend && pipenv run python manage.py demo_up
 
-      - name: Run Django server
-        run: |
-          cd ./backend && pipenv run python manage.py runserver 0.0.0.0:8000 &
+      #- name: Run Django server
+      #  run: |
+      #    cd ./backend && pipenv run python manage.py runserver 0.0.0.0:8000
 
-      - name: Wait for backend to start
-        run: |
-          curl -IsS http://localhost:8000/api/healthcheck/ >/dev/null
-          echo "Backend is available"
+
+      #- name: Wait for backend to start
+      #  run: |
+      #    curl -IsS http://localhost:8000/api/healthcheck/ >/dev/null
+      #    echo "Backend is available"
 
       - name: Cache node modules
         uses: actions/cache@v2
@@ -107,19 +108,19 @@ jobs:
           cd ./frontend
           yarn install --frozen-lockfile
 
-      - name: Start frontend
-        run: |
-          cd ./frontend
-          yarn run dev --port 3000 &
+      #- name: Start frontend
+      #  run: |
+      #    cd ./frontend
+      #    yarn run dev --port 3000
 
-      - name: Wait for frontend to start
-        run: |
-          curl -s -o /dev/null -w "%{http_code}" http://localhost:3000
-          echo "Frontend is available"
+      #- name: Wait for frontend to start
+      #  run: |
+      #    curl -s -o /dev/null -w "%{http_code}" http://localhost:3000
+      #    echo "Frontend is available"
 
       - name: Cypress run
         uses: cypress-io/github-action@v5
         with:
           working-directory: ./frontend
-          start: echo "Starting Cypress..."
+          start: yarn run dev --port 3000 & cd .. && cd ./backend && pipenv run python manage.py runserver 0.0.0.0:8000 & cd ./frontend
           wait-on: "http://localhost:3000/login"
