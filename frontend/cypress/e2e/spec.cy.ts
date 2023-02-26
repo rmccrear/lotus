@@ -17,7 +17,9 @@ function getEmail(length) {
 
 const Login = () => {
   cy.visit("http://localhost:3000/login");
+  cy.screenshot();
   cy.contains("Username or Email");
+  cy.screenshot();
   cy.get("[name='username']").type("demo4");
   cy.get("[name='password']").type("demo4");
   cy.get("form").contains("Login").click();
@@ -28,6 +30,15 @@ const Login = () => {
     }
   });
 };
+
+describe("Accesses Login Page", () => {
+  it("Navigates to Login", () => {
+    cy.visit("http://localhost:3000/login");
+    cy.screenshot('go-to-login');
+    cy.contains("Username or Email");
+    cy.screenshot('find-username-or-email');
+  });
+});
 
 describe("Testing Successful Login", () => {
   it("Navigates to Dashboard After Login", () => {
